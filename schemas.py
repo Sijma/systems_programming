@@ -69,7 +69,8 @@ event_schema = {
             "format": "date-time"
         },
         "country": {
-            "type": "string"
+            "type": "string",
+            "pattern": "^[A-Z]{3}$"
         },
         "end_timestamp": {
             "type": "string",
@@ -159,17 +160,16 @@ coupon_schema = {
 }
 
 
-def validate_json(schema):  # Decorator factory, returns decorator function
+def json_validator(schema):  # Decorator factory, returns decorator function
     def decorator(f):  # f argument here is our "view", which is the app.route function we're decorating this with. It returns a "wrapped" view function, which adds the wrapper code to our original function.
         @wraps(f)  # @wraps is used to preserve the original name and docstring of the view function being decorated
         def wrapper(*args, **kwargs):
             if not request.is_json:
-                print(1)
-                return jsonify({'error': 'Invalid JSON request'}), 400
+                return jsonify({"message": "Invalid request body: expected JSON"}), 400
             try:
-                validate(request.json, schema)
+                validate(request.json, schema)  # Should the validation be in a separate function?
             except ValidationError as e:
-                return jsonify({'error': str(e)}), 400
+                return jsonify({"message": str(e)}), 400
             return f(*args, **kwargs)
         return wrapper
     return decorator
