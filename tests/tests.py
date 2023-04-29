@@ -25,6 +25,7 @@ class TestApp(unittest.TestCase):
             payload = json.dumps({"user-id": 1})
             response = client.get('/recommend', data=payload)
             data = json.loads(response.get_data(as_text=True))
+            print(response)
             self.assertEqual(response.status_code, 200)
             self.assertEqual(data, {"recommendation": "random"})
 
@@ -33,6 +34,7 @@ class TestApp(unittest.TestCase):
             payload = json.dumps({"user-id": 2})
             response = client.get('/recommend', data=payload)
             data = json.loads(response.get_data(as_text=True))
+            print(response)
             self.assertEqual(response.status_code, 200)
             self.assertEqual(data, {"recommendation": "dummy"})
 

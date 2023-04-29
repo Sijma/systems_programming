@@ -1,3 +1,7 @@
+from functools import wraps
+from jsonschema import validate, ValidationError
+from flask import request, jsonify
+
 recommendation_request_schema = {
     "type": "object",
     "properties": {
@@ -103,7 +107,7 @@ event_schema = {
     ]
 }
 
-coupon = {
+coupon_schema = {
     "type": "object",
     "properties": {
         "coupon_id": {
@@ -153,3 +157,19 @@ coupon = {
         "user_id"
     ]
 }
+
+
+def validate_json(schema):  # Decorator factory, returns decorator function
+    def decorator(f):  # f argument here is our "view", which is the app.route function we're decorating this with. It returns a "wrapped" view function, which adds the wrapper code to our original function.
+        @wraps(f)  # @wraps is used to preserve the original name and docstring of the view function being decorated
+        def wrapper(*args, **kwargs):
+            if not request.is_json:
+                print(1)
+                return jsonify({'error': 'Invalid JSON request'}), 400
+            try:
+                validate(request.json, schema)
+            except ValidationError as e:
+                return jsonify({'error': str(e)}), 400
+            return f(*args, **kwargs)
+        return wrapper
+    return decorator
