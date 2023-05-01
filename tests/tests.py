@@ -1,6 +1,7 @@
 import unittest
+from unittest import mock
 from app import app
-from jsonschema import ValidationError
+from jsonschema import ValidationError, validate
 import json
 import recommendations
 import schemas
@@ -187,23 +188,50 @@ class TestSchemas(unittest.TestCase):
 
 
 class TestApp(unittest.TestCase):
-    def test_get_recommendation_odd(self):
-        with app.test_client() as client:
-            payload = json.dumps({"user-id": 1})
-            response = client.get('/recommend', data=payload)
-            data = json.loads(response.get_data(as_text=True))
-            print(response)
-            self.assertEqual(response.status_code, 200)
-            self.assertEqual(data, {"recommendation": "random"})
+    def setUp(self):
+        self.client = app.test_client()
 
-    def test_get_recommendation_even(self):
-        with app.test_client() as client:
-            payload = json.dumps({"user-id": 2})
-            response = client.get('/recommend', data=payload)
-            data = json.loads(response.get_data(as_text=True))
-            print(response)
-            self.assertEqual(response.status_code, 200)
-            self.assertEqual(data, {"recommendation": "dummy"})
+    @mock.patch('app.get_recommendation_based_on_user_id', wraps=recommendations.get_recommendation_based_on_user_id)  # Is this correct?
+    @mock.patch('app.validate', wraps=validate)  # Is this correct?
+    def test_get_recommendation_odd(self, mock_validate, mock_get_recommendation_based_on_user_id):
+        payload = {"user-id": 1}
+        response = self.client.post('/recommend', json=payload)
+
+        mock_get_recommendation_based_on_user_id.assert_called_once_with(recommendations.recommendation_registry, payload["user-id"])  # Is this correct?
+        mock_validate.assert_called_once_with(response.json, schemas.recommendation_response_schema)  # Is this correct?
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.is_json)
+        self.assertIsNone(schemas.validate(response.json, schemas.recommendation_response_schema))
+        self.assertEqual(response.json, {"recommendation": "random"})
+
+    @mock.patch('app.get_recommendation_based_on_user_id', return_value={"recommendation": "random"})  # Is this correct?
+    @mock.patch('app.validate', return_value=None)  # Is this correct?
+    def test_get_recommendation_odd_2(self, mock_validate, mock_get_recommendation_based_on_user_id):
+        payload = {"user-id": 1}
+        response = self.client.post('/recommend', json=payload)
+
+        mock_get_recommendation_based_on_user_id.assert_called_once_with(recommendations.recommendation_registry, 1)  # Is this correct?
+        mock_validate.assert_called_once_with({"recommendation": "random"}, schemas.recommendation_response_schema)  # Is this correct?
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.is_json)
+        self.assertIsNone(schemas.validate(response.json, schemas.recommendation_response_schema))
+        self.assertEqual(response.json, {"recommendation": "random"})
+
+    @mock.patch('app.get_recommendation_based_on_user_id', return_value={"recommendation": "dummy"})  # Is this correct?
+    @mock.patch('app.validate', return_value=None)  # Is this correct?
+    def test_get_recommendation_even(self, mock_validate, mock_get_recommendation_based_on_user_id):
+        payload = {"user-id": 2}
+        response = self.client.post('/recommend', json=payload)
+
+        mock_get_recommendation_based_on_user_id.assert_called_once_with(recommendations.recommendation_registry, 2)
+        mock_validate.assert_called_once_with({"recommendation": "dummy"}, schemas.recommendation_response_schema)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.is_json)
+        self.assertIsNone(schemas.validate(response.json, schemas.recommendation_response_schema))
+        self.assertEqual(response.json, {"recommendation": "dummy"})
 
 
 if __name__ == '__main__':
