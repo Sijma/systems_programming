@@ -92,5 +92,5 @@ recommendation_registry = {
 }
 
 
-def get_recommendation(registry, generator_type, user_id):
+def get_recommendation_coupon(registry, generator_type, user_id):
     return registry[generator_type](user_id)

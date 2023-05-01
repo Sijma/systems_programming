@@ -1,8 +1,8 @@
 import unittest
-from unittest import mock
 from unittest.mock import MagicMock, patch
-from app import app
-from jsonschema import ValidationError, validate
+import app
+from app import app as app_client
+from jsonschema import ValidationError
 import recommendations
 import schemas
 
@@ -167,42 +167,30 @@ class TestRecommendations(unittest.TestCase):
         }
 
         # Test with "dummy" generator_type
-        self.assertEqual(recommendations.get_recommendation(mocked_registry, "dummy", user_id), mocked_dummy_result)
+        self.assertEqual(recommendations.get_recommendation_coupon(mocked_registry, "dummy", user_id), mocked_dummy_result)
         recommendations.dummy_generator.assert_called_once_with(1)
 
         # Test with "random" generator_type
-        self.assertEqual(recommendations.get_recommendation(mocked_registry, "random", user_id), mocked_random_result)
+        self.assertEqual(recommendations.get_recommendation_coupon(mocked_registry, "random", user_id), mocked_random_result)
         recommendations.random_generator.assert_called_once_with(1)
 
 
 class TestSchemas(unittest.TestCase):
     #  I assume when testing schemas we should write a test case for each possible field in the schema. But that would take a while.
     def test_valid_recommendation_request_schema(self):
-        data = {"user-id": 1, "generator": "random"}
+        data = {"user_id": 1, "generator": "random"}
         self.assertIsNone(schemas.validate(data, schemas.recommendation_request_schema))
 
     def test_invalid_recommendation_request_schema(self):
         data = "invalid json"
         with self.assertRaises(ValidationError):
             schemas.validate(data, schemas.recommendation_request_schema)
-        data = {"user-id": "a", "generator": "random"}
+        data = {"user_id": "a", "generator": "random"}
         with self.assertRaises(ValidationError):
             schemas.validate(data, schemas.recommendation_request_schema)
-        data = {"user-id": 1, "generator": "rand"}
+        data = {"user_id": 1, "generator": "rand"}
         with self.assertRaises(ValidationError):
             schemas.validate(data, schemas.recommendation_request_schema)
-
-    def test_valid_recommendation_response_schema(self):
-        data = {"recommendation": "Buy stock XYZ"}
-        self.assertIsNone(schemas.validate(data, schemas.recommendation_response_schema))
-
-    def test_invalid_recommendation_response_schema(self):
-        data = "invalid json"
-        with self.assertRaises(ValidationError):
-            schemas.validate(data, schemas.recommendation_response_schema)
-        data = {56}
-        with self.assertRaises(ValidationError):
-            schemas.validate(data, schemas.recommendation_response_schema)
 
     def test_valid_user_schema(self):
         data = {
@@ -346,35 +334,80 @@ class TestSchemas(unittest.TestCase):
 
 class TestApp(unittest.TestCase):
     def setUp(self):
-        self.client = app.test_client()
+        self.client = app_client.test_client()
 
-    @mock.patch('app.get_recommendation_based_on_user_id', return_value={"recommendation": "random"})  # Is this correct?
-    @mock.patch('app.validate', return_value=None)  # Is this correct?
-    def test_get_recommendation_odd_2(self, mock_validate, mock_get_recommendation_based_on_user_id):
-        payload = {"user-id": 1}
+    @patch('app.get_recommendation_coupon', MagicMock(return_value={
+            "coupon_id": "87a74a51-8d4d-4ecf-a5b5-623042c8bb6b",
+            "selections": [
+                {
+                    "event_id": "d89aa157-efc6-481a-a2aa-1c615d9a9f62",
+                    "odds": 1.67
+                }
+            ],
+            "stake": 15.0,
+            "timestamp": "2023-04-30T12:00:00Z",
+            "user_id": 5
+
+        }))
+    @patch('app.validate', MagicMock(return_value=None))
+    def test_get_recommendation_1(self):
+        payload = {"user_id": 1, "generator": "random"}
         response = self.client.post('/recommend', json=payload)
 
-        mock_get_recommendation_based_on_user_id.assert_called_once_with(recommendations.recommendation_registry, 1)  # Is this correct?
-        mock_validate.assert_called_once_with({"recommendation": "random"}, schemas.recommendation_response_schema)  # Is this correct?
+        mocked_registry = {
+            "dummy": recommendations.dummy_generator,
+            "random": recommendations.random_generator,
+        }
+
+        recommendation = app.get_recommendation_coupon.return_value
+
+        app.get_recommendation_coupon.assert_called_once_with(mocked_registry, "random", 1)
+        app.validate.assert_called_once_with(recommendation, schemas.coupon_schema)
 
         self.assertEqual(response.status_code, 200)
         self.assertTrue(response.is_json)
-        self.assertIsNone(schemas.validate(response.json, schemas.recommendation_response_schema))
-        self.assertEqual(response.json, {"recommendation": "random"})
+        self.assertIsNone(schemas.validate(response.json, schemas.coupon_schema))
+        self.assertEqual(response.json, recommendation)
 
-    @mock.patch('app.get_recommendation_based_on_user_id', return_value={"recommendation": "dummy"})  # Is this correct?
-    @mock.patch('app.validate', return_value=None)  # Is this correct?
-    def test_get_recommendation_even(self, mock_validate, mock_get_recommendation_based_on_user_id):
-        payload = {"user-id": 2}
+    @patch('app.get_recommendation_coupon', MagicMock(return_value={
+            "coupon_id": "8bcc0f90-96e9-4f87-aeab-22aff8c278ae",
+            "selections": [
+                {
+                    "event_id": "7099151a-33aa-423f-9915-225c07c1daca",
+                    "odds": 3.97
+                },
+                {
+                    "event_id": "f597d516-d3cf-47cc-82dc-f9f4b03a6589",
+                    "odds": 2.9
+                },
+                {
+                    "event_id": "e6386e08-dafe-4f3e-9702-b1955eef03a7",
+                    "odds": 4.91
+                }
+            ],
+            "stake": 40.8,
+            "timestamp": "2020-01-01101:05:01",
+            "user_id": 1
+        }))
+    @patch('app.validate', MagicMock(return_value=None))
+    def test_get_recommendation_2(self):
+        payload = {"user_id": 2, "generator": "dummy"}
         response = self.client.post('/recommend', json=payload)
 
-        mock_get_recommendation_based_on_user_id.assert_called_once_with(recommendations.recommendation_registry, 2)
-        mock_validate.assert_called_once_with({"recommendation": "dummy"}, schemas.recommendation_response_schema)
+        mocked_registry = {
+            "dummy": recommendations.dummy_generator,
+            "random": recommendations.random_generator,
+        }
+
+        recommendation = app.get_recommendation_coupon.return_value
+
+        app.get_recommendation_coupon.assert_called_once_with(mocked_registry, "dummy", 2)
+        app.validate.assert_called_once_with(recommendation, schemas.coupon_schema)
 
         self.assertEqual(response.status_code, 200)
         self.assertTrue(response.is_json)
-        self.assertIsNone(schemas.validate(response.json, schemas.recommendation_response_schema))
-        self.assertEqual(response.json, {"recommendation": "dummy"})
+        self.assertIsNone(schemas.validate(response.json, schemas.coupon_schema))
+        self.assertEqual(response.json, recommendation)
 
 
 if __name__ == '__main__':
