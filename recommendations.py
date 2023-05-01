@@ -10,11 +10,11 @@ def dummy_generator(user_id):
                 "odds": 3.97
             },
             {
-                "event_id": "f597d516—d3cf-47cc-82dc—f9f4b03a6589",
+                "event_id": "f597d516-d3cf-47cc-82dc-f9f4b03a6589",
                 "odds": 2.9
             },
             {
-                "event_id": "e6386e08—dafe-4f3e-9702—b1955eef03a7",
+                "event_id": "e6386e08-dafe-4f3e-9702-b1955eef03a7",
                 "odds": 4.91
             }
         ],
@@ -33,11 +33,11 @@ def random_generator(user_id):
                 "odds": 3.97
             },
             {
-                "event_id": "f597d516—d3cf-47cc-82dc—f9f4b03a6589",
+                "event_id": "f597d516-d3cf-47cc-82dc-f9f4b03a6589",
                 "odds": 2.9
             },
             {
-                "event_id": "e6386e08—dafe-4f3e-9702—b1955eef03a7",
+                "event_id": "e6386e08-dafe-4f3e-9702-b1955eef03a7",
                 "odds": 4.91
             }
         ],

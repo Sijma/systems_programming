@@ -11,7 +11,7 @@ app.json.sort_keys = False
 @schemas.json_validator(schemas.recommendation_request_schema)
 def get_recommendation():
     response = get_recommendation(recommendation_registry, request.json["generator"], request.json["user-id"])
-    validate(response, schemas.recommendation_response_schema)
+    validate(response, schemas.coupon_schema)
     return response
 
 

@@ -1,21 +1,15 @@
 from functools import wraps
 from jsonschema import validate, ValidationError
+from recommendations import recommendation_registry
 from flask import request, jsonify
 
 recommendation_request_schema = {
     "type": "object",
     "properties": {
-        "user-id": {"type": "integer"},
+        "user_id": {"type": "integer", "minimum": 1},
+        "generator": {"type": "string", "enum": list(recommendation_registry.keys())}
     },
-    "required": ["user-id"]
-}
-
-recommendation_response_schema = {
-    "type": "object",
-    "properties": {
-        "recommendation": {"type": "string"}
-    },
-    "required": ["recommendation"]
+    "required": ["user_id", "generator"]
 }
 
 user_schema = {
@@ -132,14 +126,12 @@ coupon_schema = {
                     },
                     "odds": {
                         "type": "number",
-                        "multipleOf": 0.01
                     }
                 }
             }
         },
         "stake": {
             "type": "number",
-            "multipleOf": 0.01
         },
         "timestamp": {
             "type": "string",
