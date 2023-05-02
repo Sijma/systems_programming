@@ -10,16 +10,12 @@ conn = psycopg2.connect(
     port=config.port
 )
 
-print("here's one connection")
 
 # How do we unittest these? Do we create a test_database and create/delete tables within the context of each test?
-# What's the best way to do that
 
-
-def test():
-    pass
-
-
+# Maybe insert statements can be further abstracted into a single function, where the insert schema is an argument.
+# however that's not straight forward with these strict query and data structures.
+# The queries can easily be in a simple registry, but the json data needs to be properly unpacked, in specific order and regardless of content/key names.
 def add_single_event(event_json):
     cur = conn.cursor()
     schemas.validate(event_json, schemas.event_schema)

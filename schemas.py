@@ -1,13 +1,12 @@
 from functools import wraps
 from jsonschema import validate, ValidationError
-from recommendations import recommendation_registry
 from flask import request, jsonify
 
 recommendation_request_schema = {
     "type": "object",
     "properties": {
         "user_id": {"type": "integer", "minimum": 1},
-        "generator": {"type": "string", "enum": list(recommendation_registry.keys())}
+        "generator": {"type": "string", "enum": ["dummy", "random"]}
     },
     "required": ["user_id", "generator"]
 }
