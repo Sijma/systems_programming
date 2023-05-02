@@ -150,16 +150,23 @@ coupon_schema = {
 }
 
 
-def json_validator(schema):  # Decorator factory, returns decorator function
+# No idea how to unittest this, nor integrate test in the flask view
+# TODO: Add checks if schemas are None, in case decorated funtion only wants to validate one of the two
+def json_validator(request_schema, response_schema):  # Decorator factory, returns decorator function
     def decorator(f):  # f argument here is our "view", which is the app.route function we're decorating this with. It returns a "wrapped" view function, which adds the wrapper code to our original function.
         @wraps(f)  # @wraps is used to preserve the original name and docstring of the view function being decorated
         def wrapper(*args, **kwargs):
             if not request.is_json:
                 return jsonify({"message": "Invalid request body: expected JSON"}), 400
             try:
-                validate(request.json, schema)  # Should the validation be in a separate function?
+                validate(request.json, request_schema)  # Should the validation be in a separate function?
             except ValidationError as e:
                 return jsonify({"message": str(e)}), 400
-            return f(*args, **kwargs)
+            response = f(*args, **kwargs)  # We route the view response to the decorator's wrapper again to validate it too
+            try:
+                validate(response, response_schema)
+            except ValidationError as e:
+                return jsonify({"message": str(e)}), 500
+            return response
         return wrapper
     return decorator

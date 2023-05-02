@@ -349,7 +349,6 @@ class TestApp(unittest.TestCase):
             "user_id": 5
 
         }))
-    @patch('app.validate', MagicMock(return_value=None))
     def test_get_recommendation_1(self):
         payload = {"user_id": 1, "generator": "random"}
         response = self.client.post('/recommend', json=payload)
@@ -362,11 +361,9 @@ class TestApp(unittest.TestCase):
         recommendation = app.get_recommendation_coupon.return_value
 
         app.get_recommendation_coupon.assert_called_once_with(mocked_registry, "random", 1)
-        app.validate.assert_called_once_with(recommendation, schemas.coupon_schema)
 
         self.assertEqual(response.status_code, 200)
         self.assertTrue(response.is_json)
-        self.assertIsNone(schemas.validate(response.json, schemas.coupon_schema))
         self.assertEqual(response.json, recommendation)
 
     @patch('app.get_recommendation_coupon', MagicMock(return_value={
@@ -389,7 +386,6 @@ class TestApp(unittest.TestCase):
             "timestamp": "2020-01-01101:05:01",
             "user_id": 1
         }))
-    @patch('app.validate', MagicMock(return_value=None))
     def test_get_recommendation_2(self):
         payload = {"user_id": 2, "generator": "dummy"}
         response = self.client.post('/recommend', json=payload)
@@ -402,11 +398,9 @@ class TestApp(unittest.TestCase):
         recommendation = app.get_recommendation_coupon.return_value
 
         app.get_recommendation_coupon.assert_called_once_with(mocked_registry, "dummy", 2)
-        app.validate.assert_called_once_with(recommendation, schemas.coupon_schema)
 
         self.assertEqual(response.status_code, 200)
         self.assertTrue(response.is_json)
-        self.assertIsNone(schemas.validate(response.json, schemas.coupon_schema))
         self.assertEqual(response.json, recommendation)
 
 

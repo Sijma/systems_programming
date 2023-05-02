@@ -9,10 +9,9 @@ app.json.sort_keys = False
 
 
 @app.route('/recommend', methods=["POST"])
-@schemas.json_validator(schemas.recommendation_request_schema)
+@schemas.json_validator(schemas.recommendation_request_schema, schemas.coupon_schema)
 def get_recommendation():
     response = get_recommendation_coupon(recommendation_registry, request.json["generator"], request.json["user_id"])
-    validate(response, schemas.coupon_schema)
     return response
 
 
