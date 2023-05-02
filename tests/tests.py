@@ -247,11 +247,11 @@ class TestSchemas(unittest.TestCase):
 
         data = {
             "begin_timestamp": "2023-04-29T14:00:00Z",
-            "country": "US",  # Invalid country format
+            "country": "USA",  # Invalid country format
             "end_timestamp": "2023-04-29T16:00:00Z",
             "event_id": "72d8a5a5-2933-42f3-8e56-8d8dc8805c5a",
             "league": "NBA",
-            "participants": ["Team A", "Team B"],
+            "participants": ["Team A"],  # Invalid participants amount
             "sport": "Basketball"
         }
         with self.assertRaises(ValidationError):

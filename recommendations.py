@@ -1,4 +1,5 @@
 import random
+from database import database
 
 
 def dummy_generator(user_id):

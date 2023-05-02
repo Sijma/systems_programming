@@ -2,6 +2,7 @@ from flask import Flask, request
 from jsonschema import validate
 from recommendations import get_recommendation_coupon, recommendation_registry
 import schemas
+from database import database
 
 app = Flask(__name__)
 app.json.sort_keys = False
@@ -17,3 +18,4 @@ def get_recommendation():
 
 if __name__ == '__main__':
     app.run()
+    database.test()

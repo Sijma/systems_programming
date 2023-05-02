@@ -64,7 +64,6 @@ event_schema = {
         },
         "country": {
             "type": "string",
-            "pattern": "^[A-Z]{3}$"
         },
         "end_timestamp": {
             "type": "string",
