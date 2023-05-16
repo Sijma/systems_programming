@@ -151,7 +151,6 @@ coupon_schema = {
 
 
 # No idea how to unittest this, nor integrate test in the flask view
-# TODO: Add checks if schemas are None, in case decorated funtion only wants to validate one of the two
 def json_validator(request_schema, response_schema):  # Decorator factory, returns decorator function
     def decorator(f):  # f argument here is our "view", which is the app.route function we're decorating this with. It returns a "wrapped" view function, which adds the wrapper code to our original function.
         @wraps(f)  # @wraps is used to preserve the original name and docstring of the view function being decorated
