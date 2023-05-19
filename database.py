@@ -36,4 +36,3 @@ def add_single_user(user_json):
     conn.commit()
     cur.close()
     return user_id
-
