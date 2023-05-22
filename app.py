@@ -1,11 +1,15 @@
 from flask import Flask, request
-from jsonschema import validate
 from recommendations import get_recommendation_coupon, recommendation_registry
 import schemas
 import database as db
 
 app = Flask(__name__)
 app.json.sort_keys = False
+
+
+@app.route('/', methods=["GET"])
+def home():
+    return "hello world!"
 
 
 @app.route('/recommend', methods=["POST"])
@@ -16,4 +20,4 @@ def get_recommendation():
 
 
 if __name__ == '__main__':
-    app.run()
+    app.run(host="0.0.0.0")

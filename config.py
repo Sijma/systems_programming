@@ -1,5 +1,5 @@
 database_name = "betting_recommendation_system"
 username = "coupon_recommendation_system"
 password = "Xq8@SHF0S1&sM7v3"
-host = "localhost"
+host = "postgres"
 port = "5432"
