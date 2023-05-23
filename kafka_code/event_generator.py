@@ -24,7 +24,7 @@ def generate_random_event():
     return event
 
 def publish_event(event):
-    producer.produce("events_topic", value=json.dumps(event))
+    producer.produce("event", value=json.dumps(event))
 
 while True:
     start_time = perf_counter()

@@ -22,7 +22,7 @@ def generate_random_user():
     return user
 
 def publish_user(user):
-    producer.produce("users_topic", value=json.dumps(user))
+    producer.produce("user", value=json.dumps(user))
 
 while True:
     start_time = perf_counter()

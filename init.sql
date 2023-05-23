@@ -1,32 +1,29 @@
 CREATE TABLE users (
-    user_id SERIAL PRIMARY KEY,
-    birth_year INTEGER NOT NULL,
-    country CHAR(3) NOT NULL,
-    currency CHAR(3) NOT NULL,
-    gender VARCHAR(6) NOT NULL,
-    registration_date TIMESTAMP NOT NULL
+    user_id INTEGER CHECK (user_id >= 1),
+    PRIMARY KEY (user_id),
+    birth_year INTEGER CHECK (birth_year >= 1900 AND birth_year <= 2023),
+    country VARCHAR(3) CHECK (country ~ '^[A-Z]{3}$'),
+    currency VARCHAR(3) CHECK (currency ~ '^[A-Z]{3}$'),
+    gender VARCHAR(10) CHECK (gender IN ('Male', 'Female', 'Other')),
+    registration_date TIMESTAMPTZ
 );
 
 CREATE TABLE events (
-    event_id UUID PRIMARY KEY,
-    begin_timestamp TIMESTAMP NOT NULL,
-    end_timestamp TIMESTAMP NOT NULL,
-    country CHAR(3) NOT NULL,
-    league VARCHAR(255) NOT NULL,
-    participants VARCHAR(255)[],
-    sport VARCHAR(255) NOT NULL
+  begin_timestamp TIMESTAMPTZ,
+  country VARCHAR(255),
+  end_timestamp TIMESTAMPTZ,
+  event_id UUID,
+  league VARCHAR(255),
+  participants VARCHAR(255)[2] CHECK (cardinality(participants) = 2),
+  sport VARCHAR(255),
+  PRIMARY KEY (event_id)
 );
 
 CREATE TABLE coupons (
-    coupon_id UUID PRIMARY KEY,
-    stake NUMERIC(10,2) NOT NULL,
-    timestamp TIMESTAMP NOT NULL,
-    user_id INTEGER NOT NULL REFERENCES users(user_id)
-);
-
-CREATE TABLE selections (
-    event_id UUID NOT NULL REFERENCES events(event_id),
-    coupon_id UUID NOT NULL REFERENCES coupons(coupon_id),
-    odds NUMERIC(4,2) NOT NULL,
-    PRIMARY KEY (event_id, coupon_id)
+  coupon_id UUID,
+  selections JSONB,
+  stake NUMERIC,
+  timestamp TIMESTAMPTZ,
+  user_id INTEGER CHECK (user_id >= 1),
+  PRIMARY KEY (coupon_id)
 );

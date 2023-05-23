@@ -11,7 +11,7 @@ services:
       POSTGRES_DB: betting_recommendation_system
     volumes:
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql
-      - ./postgres_data:/var/lib/postgresql/data 
+      - ./postgres_data:/var/lib/postgresql/data
 
   kafka:
     image: bitnami/kafka:latest
@@ -21,11 +21,35 @@ services:
     environment:
       ALLOW_PLAINTEXT_LISTENER: 'yes'
 
+  kafka_consumer:
+    image: python:latest
+    restart: always
+    depends_on:
+      - kafka
+    networks:
+      - app-network
+    volumes:
+      - ./requirements.txt:/requirements.txt
+      - ./kafka_consumer.py:/kafka_consumer.py
+      - ./database.py:/database.py
+      - ./schemas.py:/schemas.py
+    command: sh -c "pip install -r requirements.txt && python -u kafka_consumer.py"
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: coupon_recommendation_system
+      POSTGRES_PASSWORD: Xq8@SHF0S1&sM7v3
+      POSTGRES_DB: betting_recommendation_system
+      KAFKA_HOST: kafka
+      KAFKA_PORT: 9092
+      SO_REUSEPORT: 1
+
   user_generator:
     image: python:latest
     restart: always
     depends_on:
       - kafka
+      - kafka_consumer
     networks:
       - app-network
     volumes:
@@ -41,6 +65,7 @@ services:
     restart: always
     depends_on:
       - kafka
+      - kafka_consumer
     networks:
       - app-network
     volumes:
@@ -56,6 +81,7 @@ services:
     restart: always
     depends_on:
       - kafka
+      - kafka_consumer
     networks:
       - app-network
     volumes:
@@ -68,7 +94,6 @@ services:
 
   app:
     build: .
-
     restart: always
     networks:
       - app-network
@@ -77,10 +102,8 @@ services:
       - "5000:5000"
     volumes:
       - .:/app
-    depends_on: # Necessary for pycharm run config to start all services
+    depends_on:
       - postgres
-      - kafka
-      - user_generator
     environment:
       POSTGRES_HOST: postgres
       POSTGRES_PORT: 5432

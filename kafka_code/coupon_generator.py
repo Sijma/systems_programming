@@ -34,7 +34,7 @@ def generate_random_coupon():
 
 
 def publish_coupon(coupon):
-    producer.produce("coupons_topic", value=json.dumps(coupon))
+    producer.produce("coupon", value=json.dumps(coupon))
 
 
 while True:
