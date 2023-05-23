@@ -3,32 +3,85 @@ services:
   postgres:
     image: postgres:latest
     restart: always
+    networks:
+      - app-network
     environment:
       POSTGRES_USER: coupon_recommendation_system
       POSTGRES_PASSWORD: Xq8@SHF0S1&sM7v3
       POSTGRES_DB: betting_recommendation_system
     volumes:
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql
-      - ./postgres_data:/var/lib/postgresql/data
+      - ./postgres_data:/var/lib/postgresql/data # need to create volume beforehand using docker volume create.
+      # If we allow volumes to create the directory for us, we will encounter permission denied errors in subsequent builds.
 
   kafka:
     image: bitnami/kafka:latest
     restart: always
+    networks:
+      - app-network
     environment:
       ALLOW_PLAINTEXT_LISTENER: 'yes'
 
+  user_generator:
+    image: python:latest
+    restart: always
+    depends_on:
+      - kafka
+    networks:
+      - app-network
+    volumes:
+      - ./kafka_code/generator_requirements.txt:/generator_requirements.txt
+      - ./kafka_code/user_generator.py:/user_generator.py
+    command: sh -c "pip install -r generator_requirements.txt && python -u user_generator.py"
+    environment:
+      KAFKA_HOST: kafka
+      KAFKA_PORT: 9092
+
+  event_generator:
+    image: python:latest
+    restart: always
+    depends_on:
+      - kafka
+    networks:
+      - app-network
+    volumes:
+      - ./kafka_code/generator_requirements.txt:/generator_requirements.txt
+      - ./kafka_code/event_generator.py:/event_generator.py
+    command: sh -c "pip install -r generator_requirements.txt && python -u event_generator.py"
+    environment:
+      KAFKA_HOST: kafka
+      KAFKA_PORT: 9092
+
+  coupon_generator:
+    image: python:latest
+    restart: always
+    depends_on:
+      - kafka
+    networks:
+      - app-network
+    volumes:
+      - ./kafka_code/generator_requirements.txt:/generator_requirements.txt
+      - ./kafka_code/coupon_generator.py:/coupon_generator.py
+    command: sh -c "pip install -r generator_requirements.txt && python -u coupon_generator.py"
+    environment:
+      KAFKA_HOST: kafka
+      KAFKA_PORT: 9092
 
   app:
     build: .
+
     restart: always
+    networks:
+      - app-network
     stop_signal: SIGINT
     ports:
       - "5000:5000"
     volumes:
       - .:/app
-    links:
+    depends_on: # Necessary for pycharm run config to start all services
       - postgres
       - kafka
+      - user_generator
     environment:
       POSTGRES_HOST: postgres
       POSTGRES_USER: coupon_recommendation_system
@@ -36,3 +89,7 @@ services:
       POSTGRES_DB: betting_recommendation_system
       KAFKA_HOST: kafka
       KAFKA_PORT: 9092
+
+networks:
+  app-network:
+    driver: bridge
