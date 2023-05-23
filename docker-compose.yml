@@ -11,8 +11,7 @@ services:
       POSTGRES_DB: betting_recommendation_system
     volumes:
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql
-      - ./postgres_data:/var/lib/postgresql/data # need to create volume beforehand using docker volume create.
-      # If we allow volumes to create the directory for us, we will encounter permission denied errors in subsequent builds.
+      - ./postgres_data:/var/lib/postgresql/data 
 
   kafka:
     image: bitnami/kafka:latest
@@ -84,6 +83,7 @@ services:
       - user_generator
     environment:
       POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
       POSTGRES_USER: coupon_recommendation_system
       POSTGRES_PASSWORD: Xq8@SHF0S1&sM7v3
       POSTGRES_DB: betting_recommendation_system

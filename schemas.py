@@ -2,6 +2,10 @@ from functools import wraps
 from jsonschema import validate, ValidationError
 from flask import request, jsonify
 
+TYPE_USER = "user"
+TYPE_EVENT = "event"
+TYPE_COUPON = "coupon"
+
 recommendation_request_schema = {
     "type": "object",
     "properties": {
@@ -147,6 +151,12 @@ coupon_schema = {
         "timestamp",
         "user_id"
     ]
+}
+
+schema_registry = {
+    TYPE_USER: user_schema,
+    TYPE_EVENT: event_schema,
+    TYPE_COUPON: coupon_schema
 }
 
 
