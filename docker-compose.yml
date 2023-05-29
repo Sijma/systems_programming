@@ -25,6 +25,7 @@ services:
     image: python:latest
     restart: always
     depends_on:
+      - postgres
       - kafka
     networks:
       - app-network

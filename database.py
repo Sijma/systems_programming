@@ -17,39 +17,44 @@ unpack_registry = {
     schemas.TYPE_COUPON: lambda coupon_json: (coupon_json['coupon_id'], json.dumps(coupon_json['selections']),coupon_json['stake'],coupon_json['timestamp'],coupon_json['user_id'])
 }
 
-connection_pool = psycopg2.pool.SimpleConnectionPool(
-    minconn=5, # min = number of connections initially created
-    maxconn=10,
-    host=os.environ.get('POSTGRES_HOST'),
-    port=os.environ.get('POSTGRES_PORT'),
-    dbname=os.environ.get('POSTGRES_DB'),
-    user=os.environ.get('POSTGRES_USER'),
-    password=os.environ.get('POSTGRES_PASSWORD')
-)
+class Database:
+    _instance = None
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+            cls._instance.connection_pool = psycopg2.pool.SimpleConnectionPool(
+                minconn=5,  # min = number of connections initially created
+                maxconn=10,
+                host=os.environ.get('POSTGRES_HOST'),
+                port=os.environ.get('POSTGRES_PORT'),
+                dbname=os.environ.get('POSTGRES_DB'),
+                user=os.environ.get('POSTGRES_USER'),
+                password=os.environ.get('POSTGRES_PASSWORD')
+            )
+        return cls._instance
 
-@contextmanager
-def database_connection():
-    conn = connection_pool.getconn()
-    try:
-        yield conn # Yield can be used produce/dynamically generate something like a lazy-evaluated iterable
-        conn.commit()
-    finally:
-        print("success")
-        connection_pool.putconn(conn)
+    @contextmanager
+    def database_connection(self):
+        conn = self.connection_pool.getconn()
+        try:
+            yield conn # Yield can be used produce/dynamically generate something like a lazy-evaluated iterable
+            conn.commit()
+        finally:
+            self.connection_pool.putconn(conn)
 
-def batch_unpack(data_json, data_type):
-    unpack_function = unpack_registry[data_type]
-    data_list = [unpack_function(record) for record in data_json]
-    return data_list
+    def batch_unpack(self, data_json, data_type):
+        unpack_function = unpack_registry[data_type]
+        data_list = [unpack_function(record) for record in data_json]
+        return data_list
 
-def insert(data_json, data_type, batch=False):
-    with database_connection() as conn:
-        cur = conn.cursor()
-        query = query_registry[data_type]
-        if batch:
-            data = batch_unpack(data_json, data_type)
-            cur.executemany(query, data)
-        else:
-            data = unpack_registry[data_type](data_json)
-            cur.execute(query, data)
-        cur.close()
+    def insert(self, data_json, data_type, batch=False):
+        with self.database_connection() as conn:
+            cur = conn.cursor()
+            query = query_registry[data_type]
+            if batch:
+                data = self.batch_unpack(data_json, data_type)
+                cur.executemany(query, data)
+            else:
+                data = unpack_registry[data_type](data_json)
+                cur.execute(query, data)
+            cur.close()

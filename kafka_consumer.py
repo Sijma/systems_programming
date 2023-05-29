@@ -1,6 +1,6 @@
 import os
 from confluent_kafka import Consumer
-from database import insert
+from database import Database
 import json
 from schemas import TYPE_USER, TYPE_EVENT, TYPE_COUPON
 from multiprocessing import Process
@@ -17,14 +17,15 @@ topics = [TYPE_USER, TYPE_EVENT, TYPE_COUPON]
 
 print("connected")
 
-buffer_size = 10
+buffer_size = 100
 
 def process_messages(topic):
     consumer = Consumer(conf)
     consumer.subscribe([topic])
 
-    buffer = []
+    db = Database()
 
+    buffer = []
     while True:
         msg = consumer.poll()
 
@@ -33,7 +34,7 @@ def process_messages(topic):
             buffer.append(value)
 
             if len(buffer) >= buffer_size:
-                insert(buffer, topic, True)
+                db.insert(buffer, topic, True)
 
                 buffer = []
             consumer.commit(msg)
