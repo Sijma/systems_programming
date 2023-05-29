@@ -3,6 +3,7 @@ from unittest.mock import MagicMock, patch
 import app
 from app import app as app_client
 from jsonschema import ValidationError
+from database import Database
 import recommendations
 import schemas
 
@@ -332,6 +333,198 @@ class TestSchemas(unittest.TestCase):
             schemas.validate(data, schemas.coupon_schema)
 
 
+class TestDatabase(unittest.TestCase):
+    def setUp(self):
+        self.db = Database()
+
+    def test_database_connection(self):
+        with self.db.database_connection() as conn:
+            self.assertIsNotNone(conn)
+            self.assertFalse(conn.closed)
+
+    def test_batch_unpack(self):
+        data_json = [
+            {
+                'user_id': 1,
+                'birth_year': 1990,
+                'country': 'US',
+                'currency': 'USD',
+                'gender': 'M',
+                'registration_date': '2022-01-01'
+            },
+            {
+                'user_id': 2,
+                'birth_year': 1985,
+                'country': 'UK',
+                'currency': 'GBP',
+                'gender': 'F',
+                'registration_date': '2022-02-01'
+            }
+        ]
+        data_type = schemas.TYPE_USER
+        expected_result = [
+            (1, 1990, 'US', 'USD', 'M', '2022-01-01'),
+            (2, 1985, 'UK', 'GBP', 'F', '2022-02-01')
+        ]
+        result = self.db.batch_unpack(data_json, data_type)
+        self.assertEqual(result, expected_result)
+
+    def test_insert_single_record(self):
+        data_json = {
+            'user_id': 1,
+            'birth_year': 1990,
+            'country': 'US',
+            'currency': 'USD',
+            'gender': 'M',
+            'registration_date': '2022-01-01'
+        }
+        data_type = schemas.TYPE_USER
+        self.db.database_connection = MagicMock()
+        self.db.database_connection().__enter__().cursor().__enter__().execute = MagicMock()
+        self.db.insert(data_json, data_type)
+        self.db.database_connection().__exit__()
+        print("new stuff")
+        self.db.database_connection().commit.assert_called_once()
+
+    def test_insert_batch_records(self):
+        data_json = [
+            {
+                'user_id': 1,
+                'birth_year': 1990,
+                'country': 'US',
+                'currency': 'USD',
+                'gender': 'M',
+                'registration_date': '2022-01-01'
+            },
+            {
+                'user_id': 2,
+                'birth_year': 1985,
+                'country': 'UK',
+                'currency': 'GBP',
+                'gender': 'F',
+                'registration_date': '2022-02-01'
+            }
+        ]
+        data_type = schemas.TYPE_USER
+        self.db.database_connection = MagicMock()
+        self.db.database_connection().__enter__().cursor().__enter__().executemany = MagicMock()
+        self.db.insert(data_json, data_type, batch=True)
+        self.db.database_connection().__enter__().commit.assert_called_once()
+
+    # def test_insert_with_error(self):
+    #     data_json = {
+    #         'user_id': 1,
+    #         'birth_year': 1990,
+    #         'country': 'US',
+    #         'currency': 'USD',
+    #         'gender': 'M',
+    #         'registration_date': '2022-01-01'
+    #     }
+    #     data_type = schemas.TYPE_USER
+    #     self.db.database_connection = MagicMock()
+    #     cursor_mock = self.db.database_connection().__enter__().cursor().__enter__()
+    #     cursor_mock.execute.side_effect = Exception("Error executing query")
+    #     with self.assertRaises(Exception):
+    #         self.db.insert(data_json, data_type)
+    #
+    # def test_insert_batch_with_error(self):
+    #     data_json = [
+    #         {
+    #             'user_id': 1,
+    #             'birth_year': 1990,
+    #             'country': 'US',
+    #             'currency': 'USD',
+    #             'gender': 'M',
+    #             'registration_date': '2022-01-01'
+    #         },
+    #         {
+    #             'user_id': 2,
+    #             'birth_year': 1985,
+    #             'country': 'UK',
+    #             'currency': 'GBP',
+    #             'gender': 'F',
+    #             'registration_date': '2022-02-01'
+    #         }
+    #     ]
+    #     data_type = schemas.TYPE_USER
+    #     self.db.database_connection = MagicMock()
+    #     cursor_mock = self.db.database_connection().__enter__().cursor().__enter__()
+    #     cursor_mock.executemany.side_effect = Exception("Error executing batch query")
+    #     with self.assertRaises(Exception):
+    #         self.db.insert(data_json, data_type, batch=True)
+
+    def test_insert_event_single_record(self):
+        data_json = {
+            'event_id': 1,
+            'begin_timestamp': '2022-01-01 12:00:00',
+            'end_timestamp': '2022-01-01 14:00:00',
+            'country': 'US',
+            'league': 'NBA',
+            'participants': ['Team A', 'Team B'],
+            'sport': 'Basketball'
+        }
+        data_type = schemas.TYPE_EVENT
+        self.db.database_connection = MagicMock()
+        self.db.database_connection().__enter__().cursor().__enter__().execute = MagicMock()
+        self.db.insert(data_json, data_type)
+        self.db.database_connection().__enter__().commit.assert_called_once()
+
+    def test_insert_coupon_batch_records(self):
+        data_json = [
+            {
+                'coupon_id': 1,
+                'selections': ['A', 'B', 'C'],
+                'stake': 10.0,
+                'timestamp': '2022-01-01 12:00:00',
+                'user_id': 1
+            },
+            {
+                'coupon_id': 2,
+                'selections': ['X', 'Y', 'Z'],
+                'stake': 5.0,
+                'timestamp': '2022-02-01 10:00:00',
+                'user_id': 2
+            }
+        ]
+        data_type = schemas.TYPE_COUPON
+        self.db.database_connection = MagicMock()
+        self.db.database_connection().__enter__().cursor().__enter__().executemany = MagicMock()
+        self.db.insert(data_json, data_type, batch=True)
+        self.db.database_connection().__enter__().commit.assert_called_once()
+
+    # def test_concurrent_insertion(self):
+    #     import threading
+    #
+    #     def insert_data():
+    #         data_json = {
+    #             'user_id': 1,
+    #             'birth_year': 1990,
+    #             'country': 'US',
+    #             'currency': 'USD',
+    #             'gender': 'M',
+    #             'registration_date': '2022-01-01'
+    #         }
+    #         data_type = schemas.TYPE_USER
+    #         self.db.insert(data_json, data_type)
+    #
+    #     num_threads = 10
+    #     threads = []
+    #     for _ in range(num_threads):
+    #         t = threading.Thread(target=insert_data)
+    #         threads.append(t)
+    #         t.start()
+    #
+    #     for t in threads:
+    #         t.join()
+    #
+    #     # Verify that all insertions were committed
+    #     with self.db.database_connection() as conn:
+    #         cur = conn.cursor()
+    #         cur.execute("SELECT COUNT(*) FROM users")
+    #         count = cur.fetchone()[0]
+    #         cur.close()
+    #         self.assertEqual(count, num_threads)
+
 class TestApp(unittest.TestCase):
     def setUp(self):
         self.client = app_client.test_client()
@@ -406,3 +599,5 @@ class TestApp(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+    while True:
+        pass

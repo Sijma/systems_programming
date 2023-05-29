@@ -93,6 +93,17 @@ services:
       KAFKA_HOST: kafka
       KAFKA_PORT: 9092
 
+  tests:
+      build:
+        context: ./tests
+      depends_on:
+        - postgres
+      volumes:
+        - .:/app
+        - ./tests:/app/tests
+      networks:
+        - app-network
+
   app:
     build: .
     restart: always
