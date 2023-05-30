@@ -6,9 +6,9 @@ from psycopg2 import pool
 import schemas
 
 query_registry = {
-    schemas.TYPE_USER: "INSERT INTO users (user_id, birth_year, country, currency, gender, registration_date) VALUES (%s, %s, %s, %s, %s, %s)",
-    schemas.TYPE_EVENT: "INSERT INTO events (event_id, begin_timestamp, end_timestamp, country, league, participants, sport) VALUES (%s, %s, %s, %s, %s, %s, %s)",
-    schemas.TYPE_COUPON: "INSERT INTO coupons (coupon_id, selections, stake, timestamp, user_id) VALUES (%s, %s, %s, %s, %s)"
+    schemas.TYPE_USER: "INSERT INTO users (user_id, birth_year, country, currency, gender, registration_date) VALUES (%s, %s, %s, %s, %s, %s) ON CONFLICT DO NOTHING",
+    schemas.TYPE_EVENT: "INSERT INTO events (event_id, begin_timestamp, end_timestamp, country, league, participants, sport) VALUES (%s, %s, %s, %s, %s, %s, %s) ON CONFLICT DO NOTHING",
+    schemas.TYPE_COUPON: "INSERT INTO coupons (coupon_id, selections, stake, timestamp, user_id) VALUES (%s, %s, %s, %s, %s) ON CONFLICT DO NOTHING"
 }
 
 unpack_registry = {
