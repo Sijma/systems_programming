@@ -1,9 +1,9 @@
 import unittest
-from unittest.mock import MagicMock, patch
+from unittest.mock import Mock, MagicMock, patch
 import app
 from app import app as app_client
 from jsonschema import ValidationError
-import database
+from database import Database, query_registry, unpack_registry
 import recommendations
 import schemas
 
@@ -333,6 +333,66 @@ class TestSchemas(unittest.TestCase):
             schemas.validate(data, schemas.coupon_schema)
 
 
+class TestDatabase(unittest.TestCase):
+    def setUp(self):
+        self.db = Database()
+
+    def tearDown(self):
+        Database._instance = None
+    @patch('psycopg2.pool.SimpleConnectionPool.getconn')
+    @patch('psycopg2.pool.SimpleConnectionPool.putconn')
+    def test_database_connection(self, mock_putconn, mock_getconn):
+        mock_connection = Mock()
+        mock_getconn.return_value = mock_connection
+
+        with self.db.database_connection() as conn:
+            mock_getconn.assert_called_once()
+            self.assertEqual(conn, mock_connection)
+
+        conn.commit.assert_called_once()
+        mock_putconn.assert_called_once_with(conn)
+
+    def test_batch_unpack(self):
+        data_json = [{'user_id': '1', 'birth_year': '2000', 'country': 'US', 'currency': 'USD', 'gender': 'M',
+                      'registration_date': '2021-01-01'}]
+        data_type = 'user'
+        expected_output = [('1', '2000', 'US', 'USD', 'M', '2021-01-01')]
+        self.assertEqual(self.db.batch_unpack(data_json, data_type), expected_output)
+
+    @patch('database.Database.database_connection')
+    def test_insert_single(self, mock_db_connection):
+        mock_cursor = Mock()
+        mock_connection = Mock()
+        mock_connection.cursor.return_value = mock_cursor
+        mock_db_connection().__enter__.return_value = mock_connection
+
+        data_json = {'user_id': '1', 'birth_year': '2000', 'country': 'US', 'currency': 'USD', 'gender': 'M',
+                     'registration_date': '2021-01-01'}
+        data_type = 'user'
+
+        with self.db.database_connection():
+            self.db.insert(data_json, data_type, batch=False)
+
+        mock_cursor.execute.assert_called_once_with(query_registry[data_type], unpack_registry[data_type](data_json))
+        mock_cursor.close.assert_called_once()
+
+
+    @patch('database.Database.database_connection')
+    def test_insert_batch(self, mock_db_connection):
+        mock_cursor = Mock()
+        mock_connection = Mock()
+        mock_connection.cursor.return_value = mock_cursor
+        mock_db_connection().__enter__.return_value = mock_connection
+
+        data_json = [{'user_id': '1', 'birth_year': '2000', 'country': 'US', 'currency': 'USD', 'gender': 'M',
+                      'registration_date': '2021-01-01'}]
+        data_type = 'user'
+
+        with self.db.database_connection():
+            self.db.insert(data_json, data_type, batch=True)
+
+        mock_cursor.executemany.assert_called_once_with(query_registry[data_type], self.db.batch_unpack(data_json, data_type))
+        mock_cursor.close.assert_called_once()
 
 
 class TestApp(unittest.TestCase):
