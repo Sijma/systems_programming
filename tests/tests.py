@@ -394,7 +394,6 @@ class TestDatabase(unittest.TestCase):
         mock_cursor.executemany.assert_called_once_with(query_registry[data_type], self.db.batch_unpack(data_json, data_type))
         mock_cursor.close.assert_called_once()
 
-
 class TestApp(unittest.TestCase):
     def setUp(self):
         self.client = app_client.test_client()
@@ -469,5 +468,3 @@ class TestApp(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
-    while True:
-        pass
