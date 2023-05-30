@@ -50,6 +50,12 @@ for topic in topics:
     p.start()
     processes.append(p)
 
+# Here, in order to 'scale out' further than 1 process per topic, we can break down each topic into multiple partitions
+# and assign them to 'balanced consumers'
+# or use https://github.com/confluentinc/parallel-consumer not sure if there's one for python
+
+# As for scaling up, we can simply allocate more resources to the docker container that is running this consumer
+
 try:
     # `Main process` waits for KeyboardInterrupt
     while True:
