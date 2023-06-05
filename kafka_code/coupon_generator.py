@@ -3,10 +3,10 @@ import json
 import random
 import uuid
 from datetime import datetime
-from time import perf_counter, sleep
+from time import sleep
 from confluent_kafka import Producer
 
-MESSAGES_PER_SECOND = 2
+MESSAGES_PER_SECOND = 10
 __time_to_sleep = 1 / MESSAGES_PER_SECOND
 
 producer = Producer({"bootstrap.servers": f"{os.environ.get('KAFKA_HOST')}:{os.environ.get('KAFKA_PORT')}"})
@@ -38,9 +38,5 @@ def publish_coupon(coupon):
 
 
 while True:
-    start_time = perf_counter()
     publish_coupon(generate_random_coupon())
-    end_time = perf_counter()
-    sleep_time = __time_to_sleep - (end_time - start_time)
-    if sleep_time > 0:
-        sleep(sleep_time)
+    sleep(__time_to_sleep)

@@ -7,7 +7,6 @@ from database import Database, query_registry, unpack_registry
 import recommendations
 import schemas
 
-
 class TestRecommendations(unittest.TestCase):
     def test_registry_contains_expected_entries(self):
         self.assertIn("dummy", recommendations.recommendation_registry)
@@ -175,7 +174,6 @@ class TestRecommendations(unittest.TestCase):
         self.assertEqual(recommendations.get_recommendation_coupon(mocked_registry, "random", user_id), mocked_random_result)
         recommendations.random_generator.assert_called_once_with(1)
 
-
 class TestSchemas(unittest.TestCase):
     #  I assume when testing schemas we should write a test case for each possible field in the schema. But that would take a while.
     def test_valid_recommendation_request_schema(self):
@@ -332,13 +330,14 @@ class TestSchemas(unittest.TestCase):
         with self.assertRaises(ValidationError):
             schemas.validate(data, schemas.coupon_schema)
 
-
+# Do we only test using mock database or should we also create temporary, 'real' databases for some tests?
 class TestDatabase(unittest.TestCase):
     def setUp(self):
         self.db = Database()
 
     def tearDown(self):
-        Database._instance = None
+        Database._instance = None # 'Reset' the singleton
+
     @patch('psycopg2.pool.SimpleConnectionPool.getconn')
     @patch('psycopg2.pool.SimpleConnectionPool.putconn')
     def test_database_connection(self, mock_putconn, mock_getconn):

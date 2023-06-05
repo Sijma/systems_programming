@@ -3,7 +3,7 @@ import json
 import random
 import uuid
 from datetime import datetime
-from time import perf_counter, sleep
+from time import sleep
 from confluent_kafka import Producer
 
 MESSAGES_PER_SECOND = 5
@@ -27,9 +27,5 @@ def publish_event(event):
     producer.produce("event", value=json.dumps(event))
 
 while True:
-    start_time = perf_counter()
     publish_event(generate_random_event())
-    end_time = perf_counter()
-    sleep_time = __time_to_sleep - (end_time - start_time)
-    if sleep_time > 0:
-        sleep(sleep_time)
+    sleep(__time_to_sleep)

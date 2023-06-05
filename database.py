@@ -49,11 +49,11 @@ class Database:
 
     def insert(self, data_json, data_type, batch=False):
         with self.database_connection() as conn:
-            cur = conn.cursor()
+            cur = conn.cursor() # TODO: Consider handling the cursor using a context block (with:)
             query = query_registry[data_type]
             if batch:
                 data = self.batch_unpack(data_json, data_type)
-                cur.executemany(query, data)
+                cur.executemany(query, data) # TODO: Consider using fast_executemany. Apparently executemany is just a loop of execute which is bad for performance
             else:
                 data = unpack_registry[data_type](data_json)
                 cur.execute(query, data)
