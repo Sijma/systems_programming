@@ -338,18 +338,20 @@ class TestDatabase(unittest.TestCase):
     def tearDown(self):
         Database._instance = None # 'Reset' the singleton
 
-    @patch('psycopg2.pool.SimpleConnectionPool.getconn')
-    @patch('psycopg2.pool.SimpleConnectionPool.putconn')
-    def test_database_connection(self, mock_putconn, mock_getconn):
-        mock_connection = Mock()
-        mock_getconn.return_value = mock_connection
+    def test_context_manager_usage(self):
+        self.db.connection_pool = MagicMock()
+        mock_conn = MagicMock()
+        mock_cur = MagicMock()
+        self.db.connection_pool.getconn.return_value = mock_conn
+        mock_conn.cursor.return_value = mock_cur
 
-        with self.db.database_connection() as conn:
-            mock_getconn.assert_called_once()
-            self.assertEqual(conn, mock_connection)
+        with self.db:
+            self.assertEqual(self.db.cur, mock_cur)
 
-        conn.commit.assert_called_once()
-        mock_putconn.assert_called_once_with(conn)
+        self.db.connection_pool.getconn.assert_called_once()
+        self.db.conn.cursor.assert_called_once()
+        self.db.cur.close.assert_called_once()
+        self.db.connection_pool.putconn.assert_called_once_with(mock_conn)
 
     def test_batch_unpack(self):
         data_json = [{'user_id': '1', 'birth_year': '2000', 'country': 'US', 'currency': 'USD', 'gender': 'M',
@@ -358,40 +360,75 @@ class TestDatabase(unittest.TestCase):
         expected_output = [('1', '2000', 'US', 'USD', 'M', '2021-01-01')]
         self.assertEqual(self.db.batch_unpack(data_json, data_type), expected_output)
 
-    @patch('database.Database.database_connection')
-    def test_insert_single(self, mock_db_connection):
-        mock_cursor = Mock()
-        mock_connection = Mock()
-        mock_connection.cursor.return_value = mock_cursor
-        mock_db_connection().__enter__.return_value = mock_connection
+    def test_insert_single(self):
+        self.db.connection_pool = MagicMock()
+        mock_conn = MagicMock()
+        mock_cur = MagicMock()
+        self.db.connection_pool.getconn.return_value = mock_conn
+        mock_conn.cursor.return_value = mock_cur
 
         data_json = {'user_id': '1', 'birth_year': '2000', 'country': 'US', 'currency': 'USD', 'gender': 'M',
                      'registration_date': '2021-01-01'}
         data_type = 'user'
 
-        with self.db.database_connection():
-            self.db.insert(data_json, data_type, batch=False)
+        self.db.insert(data_json, data_type, batch=False)
 
-        mock_cursor.execute.assert_called_once_with(query_registry[data_type], unpack_registry[data_type](data_json))
-        mock_cursor.close.assert_called_once()
+        self.db.connection_pool.getconn.assert_called_once()
+        mock_conn.cursor.assert_called_once()
+        mock_cur.execute.assert_called_once()
+        mock_conn.commit.assert_called_once()
+        mock_cur.close.assert_called_once()
+        self.db.connection_pool.putconn.assert_called_once_with(mock_conn)
 
 
-    @patch('database.Database.database_connection')
-    def test_insert_batch(self, mock_db_connection):
-        mock_cursor = Mock()
-        mock_connection = Mock()
-        mock_connection.cursor.return_value = mock_cursor
-        mock_db_connection().__enter__.return_value = mock_connection
+    def test_insert_batch(self):
+        self.db.connection_pool = MagicMock()
+        mock_conn = MagicMock()
+        mock_cur = MagicMock()
+        self.db.connection_pool.getconn.return_value = mock_conn
+        mock_conn.cursor.return_value = mock_cur
 
         data_json = [{'user_id': '1', 'birth_year': '2000', 'country': 'US', 'currency': 'USD', 'gender': 'M',
                       'registration_date': '2021-01-01'}]
         data_type = 'user'
 
-        with self.db.database_connection():
-            self.db.insert(data_json, data_type, batch=True)
+        self.db.insert(data_json, data_type, batch=True)
 
-        mock_cursor.executemany.assert_called_once_with(query_registry[data_type], self.db.batch_unpack(data_json, data_type))
-        mock_cursor.close.assert_called_once()
+        self.db.connection_pool.getconn.assert_called_once()
+        mock_conn.cursor.assert_called_once()
+        mock_cur.executemany.assert_called_once()
+        mock_conn.commit.assert_called_once()
+        mock_cur.close.assert_called_once()
+        self.db.connection_pool.putconn.assert_called_once_with(mock_conn)
+
+    def test_connection_and_cursor_cleanup_on_error(self):
+        self.db.connection_pool = MagicMock()
+        mock_conn = MagicMock()
+        mock_cur = MagicMock()
+        self.db.connection_pool.getconn.return_value = mock_conn
+        mock_conn.cursor.return_value = mock_cur
+
+        data_json = {
+            'user_id': 1,
+            'birth_year': 1990,
+            'country': 'USA',
+            'currency': 'USD',
+            'gender': 'Male',
+            'registration_date': '2023-01-01'
+        }
+        data_type = schemas.TYPE_USER
+
+        mock_cur.execute.side_effect = Exception('Test error')
+
+        with self.assertRaises(Exception):
+            self.db.insert(data_json, data_type, batch=False)
+
+        self.db.connection_pool.getconn.assert_called_once()
+        mock_conn.cursor.assert_called_once()
+        mock_cur.execute.assert_called_once()
+        mock_conn.rollback.assert_called_once()
+        mock_cur.close.assert_called_once()
+        self.db.connection_pool.putconn.assert_called_once_with(mock_conn)
 
 class TestApp(unittest.TestCase):
     def setUp(self):

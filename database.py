@@ -1,6 +1,5 @@
 import os
 import json
-from contextlib import contextmanager
 import psycopg2
 from psycopg2 import pool
 import schemas
@@ -60,7 +59,6 @@ class Database:
             else:
                 data = unpack_registry[data_type](data_json)
                 self.cur.execute(query, data)
-            self.cur.close()
 
     def get_random_event_id_for_statistics(self):
         query = """
