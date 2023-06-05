@@ -33,14 +33,18 @@ class Database:
             )
         return cls._instance
 
-    @contextmanager
-    def database_connection(self):
-        conn = self.connection_pool.getconn()
-        try:
-            yield conn # Yield can be used produce/dynamically generate something like a lazy-evaluated iterable
-            conn.commit()
-        finally:
-            self.connection_pool.putconn(conn)
+    def __enter__(self):
+        self.conn = self.connection_pool.getconn()
+        self.cur = self.conn.cursor()
+        return self.cur
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if exc_type is None:
+            self.conn.commit()
+        else:
+            self.conn.rollback()
+        self.cur.close()
+        self.connection_pool.putconn(self.conn)
 
     def batch_unpack(self, data_json, data_type):
         unpack_function = unpack_registry[data_type]
@@ -48,16 +52,15 @@ class Database:
         return data_list
 
     def insert(self, data_json, data_type, batch=False):
-        with self.database_connection() as conn:
-            cur = conn.cursor() # TODO: Consider handling the cursor using a context block (with:)
+        with self:
             query = query_registry[data_type]
             if batch:
                 data = self.batch_unpack(data_json, data_type)
-                cur.executemany(query, data) # TODO: Consider using fast_executemany. Apparently executemany is just a loop of execute which is bad for performance
+                self.cur.executemany(query, data) # TODO: Consider using fast_executemany. Apparently executemany is just a loop of execute which is bad for performance
             else:
                 data = unpack_registry[data_type](data_json)
-                cur.execute(query, data)
-            cur.close()
+                self.cur.execute(query, data)
+            self.cur.close()
 
     def get_random_event_id_for_statistics(self):
         query = """
@@ -71,10 +74,9 @@ class Database:
                 ORDER BY random()
                 LIMIT 1
             """
-        with self.database_connection() as conn:
-            cur = conn.cursor()
-            cur.execute(query)
-            result = cur.fetchone()
+        with self:
+            self.cur.execute(query)
+            result = self.cur.fetchone()
 
             # If an eligible event_id is found, return it; otherwise, return None
             event_id = result[0] if result else None
