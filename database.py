@@ -58,3 +58,24 @@ class Database:
                 data = unpack_registry[data_type](data_json)
                 cur.execute(query, data)
             cur.close()
+
+    def get_random_event_id_for_statistics(self):
+        query = """
+                SELECT event_id
+                FROM events
+                WHERE end_timestamp < NOW()
+                    AND event_id NOT IN (
+                        SELECT event_id
+                        FROM historical_events
+                    )
+                ORDER BY random()
+                LIMIT 1
+            """
+        with self.database_connection() as conn:
+            cur = conn.cursor()
+            cur.execute(query)
+            result = cur.fetchone()
+
+            # If an eligible event_id is found, return it; otherwise, return None
+            event_id = result[0] if result else None
+            return event_id

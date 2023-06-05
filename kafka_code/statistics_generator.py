@@ -1,7 +1,7 @@
 import os
 import json
 import random
-import database
+from database import Database
 from time import sleep
 from confluent_kafka import Producer
 
@@ -9,6 +9,7 @@ MESSAGES_PER_SECOND = 1
 __time_to_sleep = 1 / MESSAGES_PER_SECOND
 
 producer = Producer({"bootstrap.servers": f"{os.environ.get('KAFKA_HOST')}:{os.environ.get('KAFKA_PORT')}"})
+db = Database()
 
 def generate_winning_statistics():
     goals_scored = random.randint(2, 5)
@@ -45,7 +46,7 @@ def generate_saves(opposing_shots_on_target, opposing_goals_scored):
     return saves
 
 def generate_random_historical_data():
-    event_id = database.get_random_event_id_for_statistics()
+    event_id = db.get_random_event_id_for_statistics()
 
     if event_id is None:
         return None
