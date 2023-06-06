@@ -31,6 +31,8 @@ def process_messages(topic):
 
         if not msg.error():
             value = json.loads(msg.value().decode('utf-8'))
+            if topic == TYPE_COUPON: # TODO: Look for a more elegant fix
+                value["selections"] = json.dumps(value["selections"])
             buffer.append(value)
 
             if len(buffer) >= buffer_size:

@@ -411,14 +411,16 @@ class UserGeneratorTests(unittest.TestCase):
 
 class EventGeneratorTests(unittest.TestCase):
     def test_generate_start_and_end_time(self):
+        time_now = datetime.now()
+
         begin_timestamp, end_timestamp = event_generator.generate_start_and_end_time()
 
         self.assertIsInstance(begin_timestamp, datetime)
         self.assertIsInstance(end_timestamp, datetime)
         self.assertLessEqual(begin_timestamp, end_timestamp)
 
-        thirty_days_ago = datetime.now() - timedelta(days=30)
-        thirty_days_from_now = datetime.now() + timedelta(days=30)
+        thirty_days_ago = time_now - timedelta(days=30)
+        thirty_days_from_now = time_now + timedelta(days=30)
         self.assertGreaterEqual(begin_timestamp, thirty_days_ago)
         self.assertLessEqual(begin_timestamp, thirty_days_from_now)
 
