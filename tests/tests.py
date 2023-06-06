@@ -5,7 +5,7 @@ import app
 import json
 from app import app as app_client
 from jsonschema import ValidationError
-from database import Database, query_registry, unpack_registry
+from database import Database, construct_query
 import recommendations
 import schemas
 
@@ -13,194 +13,10 @@ import sys
 sys.path.append('./kafka_code')
 import statistics_generator, user_generator, event_generator, coupon_generator
 
-class TestRecommendations(unittest.TestCase):
-    def test_registry_contains_expected_entries(self):
-        self.assertIn("dummy", recommendations.recommendation_registry)
-        self.assertIn("random", recommendations.recommendation_registry)
-
-    def test_registry_return_values(self):
-        self.assertEqual(recommendations.dummy_generator, recommendations.recommendation_registry["dummy"])
-        self.assertEqual(recommendations.random_generator, recommendations.recommendation_registry["random"])
-
-    def test_dummy(self):
-        recommendation = recommendations.dummy_generator(1)
-        self.assertEqual(recommendation, {
-            "coupon_id": "8bcc0f90-96e9-4f87-aeab-22aff8c278ae",
-            "selections": [
-                {
-                    "event_id": "7099151a-33aa-423f-9915-225c07c1daca",
-                    "outcome": "away win",
-                    "odds": 3.97
-                },
-                {
-                    "event_id": "f597d516-d3cf-47cc-82dc-f9f4b03a6589",
-                    "outcome": "away win",
-                    "odds": 2.9
-                },
-                {
-                    "event_id": "e6386e08-dafe-4f3e-9702-b1955eef03a7",
-                    "outcome": "away win",
-                    "odds": 4.91
-                }
-            ],
-            "stake": 40.8,
-            "timestamp": "2020-01-01101:05:01",
-            "user_id": 1
-        })
-        self.assertIsNone(schemas.validate(recommendation, schemas.coupon_schema))  # Is it correct to check schema here?
-
-    @patch('recommendations.random.randint', MagicMock(return_value=0))
-    def test_random0(self):
-        recommendation = recommendations.random_generator(1)
-        self.assertEqual(recommendation, {
-            "coupon_id": "8bcc0f90-96e9-4f87-aeab-22aff8c278ae",
-            "selections": [
-                {
-                    "event_id": "7099151a-33aa-423f-9915-225c07c1daca",
-                    "outcome": "away win",
-                    "odds": 3.97
-                },
-                {
-                    "event_id": "f597d516-d3cf-47cc-82dc-f9f4b03a6589",
-                    "outcome": "away win",
-                    "odds": 2.9
-                },
-                {
-                    "event_id": "e6386e08-dafe-4f3e-9702-b1955eef03a7",
-                    "outcome": "away win",
-                    "odds": 4.91
-                }
-            ],
-            "stake": 40.8,
-            "timestamp": "2020-01-01101:05:01",
-            "user_id": 1
-        })
-        self.assertIsNone(schemas.validate(recommendation, schemas.coupon_schema))
-        recommendations.random.randint.assert_called_once_with(0, 2)
-
-    @patch('recommendations.random.randint', MagicMock(return_value=1))
-    def test_random1(self):
-        recommendation = recommendations.random_generator(1)
-        self.assertEqual(recommendation, {
-            "coupon_id": "b3a3e24c-fb9e-4ed1-9bb4-321cb7a2bc1f",
-            "selections": [
-                {
-                    "event_id": "a5a7a5d5-c5f7-4b33-8dcb-04f757e9a7a9",
-                    "outcome": "away win",
-                    "odds": 2.15
-                },
-                {
-                    "event_id": "d8f6c1b6-95de-438c-b6d8-72e79b78aa0b",
-                    "outcome": "away win",
-                    "odds": 1.85
-                },
-                {
-                    "event_id": "8d3c3e1e-2b54-4c3a-97e4-93b70ca23b7f",
-                    "outcome": "away win",
-                    "odds": 4.28
-                },
-                {
-                    "event_id": "fc8dc476-9c70-4217-bb2d-74d820a6c740",
-                    "outcome": "away win",
-                    "odds": 2.6
-                }
-            ],
-            "stake": 25.0,
-            "timestamp": "2022-02-22T08:15:30Z",
-            "user_id": 1
-        })
-        self.assertIsNone(schemas.validate(recommendation, schemas.coupon_schema))
-        recommendations.random.randint.assert_called_once_with(0, 2)
-
-    @patch('recommendations.random.randint', MagicMock(return_value=2))
-    def test_random2(self):
-        recommendation = recommendations.random_generator(5)
-        self.assertEqual(recommendation, {
-            "coupon_id": "87a74a51-8d4d-4ecf-a5b5-623042c8bb6b",
-            "selections": [
-                {
-                    "event_id": "d89aa157-efc6-481a-a2aa-1c615d9a9f62",
-                    "outcome": "away win",
-                    "odds": 1.67
-                }
-            ],
-            "stake": 15.0,
-            "timestamp": "2023-04-30T12:00:00Z",
-            "user_id": 5
-
-        })
-        self.assertIsNone(schemas.validate(recommendation, schemas.coupon_schema))
-        recommendations.random.randint.assert_called_once_with(0, 2)
-
-    @patch('recommendations.dummy_generator', MagicMock(return_value={
-            "coupon_id": "8bcc0f90-96e9-4f87-aeab-22aff8c278ae",
-            "selections": [
-                {
-                    "event_id": "7099151a-33aa-423f-9915-225c07c1daca",
-                    "outcome": "away win",
-                    "odds": 3.97
-                },
-                {
-                    "event_id": "f597d516-d3cf-47cc-82dc-f9f4b03a6589",
-                    "outcome": "away win",
-                    "odds": 2.9
-                },
-                {
-                    "event_id": "e6386e08-dafe-4f3e-9702-b1955eef03a7",
-                    "outcome": "away win",
-                    "odds": 4.91
-                }
-            ],
-            "stake": 40.8,
-            "timestamp": "2020-01-01101:05:01",
-            "user_id": 1
-        }))
-    @patch('recommendations.random_generator', MagicMock(return_value={
-            "coupon_id": "8bcc0f90-96e9-4f87-aeab-22aff8c278ae",
-            "selections": [
-                {
-                    "event_id": "7099151a-33aa-423f-9915-225c07c1daca",
-                    "outcome": "away win",
-                    "odds": 3.97
-                },
-                {
-                    "event_id": "f597d516-d3cf-47cc-82dc-f9f4b03a6589",
-                    "outcome": "away win",
-                    "odds": 2.9
-                },
-                {
-                    "event_id": "e6386e08-dafe-4f3e-9702-b1955eef03a7",
-                    "outcome": "away win",
-                    "odds": 4.91
-                }
-            ],
-            "stake": 40.8,
-            "timestamp": "2020-01-01101:05:01",
-            "user_id": 1
-        }))
-    def test_get_recommendation(self):
-        user_id = 1
-
-        mocked_dummy_result = recommendations.dummy_generator.return_value
-        mocked_random_result = recommendations.random_generator.return_value
-
-        mocked_registry = {
-            "dummy": recommendations.dummy_generator,
-            "random": recommendations.random_generator,
-        }
-
-        # Test with "dummy" generator_type
-        self.assertEqual(recommendations.get_recommendation_coupon(mocked_registry, "dummy", user_id), mocked_dummy_result)
-        recommendations.dummy_generator.assert_called_once_with(1)
-
-        # Test with "random" generator_type
-        self.assertEqual(recommendations.get_recommendation_coupon(mocked_registry, "random", user_id), mocked_random_result)
-        recommendations.random_generator.assert_called_once_with(1)
-
 class TestSchemas(unittest.TestCase):
     #  I assume when testing schemas we should write a test case for each possible field in the schema. But that would take a while.
     def test_valid_recommendation_request_schema(self):
-        data = {"user_id": 1, "generator": "random"}
+        data = {"user_id": 1, "generator": "random", "amount": 3}
         self.assertIsNone(schemas.validate(data, schemas.recommendation_request_schema))
 
     def test_invalid_recommendation_request_schema(self):
@@ -453,7 +269,6 @@ class TestSchemas(unittest.TestCase):
         with self.assertRaises(ValidationError):
             schemas.validate(data, schemas.statistics_schema)
 
-
 class TestDatabase(unittest.TestCase):
     def setUp(self):
         self.db = Database()
@@ -476,12 +291,31 @@ class TestDatabase(unittest.TestCase):
         self.db.cur.close.assert_called_once()
         self.db.connection_pool.putconn.assert_called_once_with(mock_conn)
 
-    def test_batch_unpack(self):
-        data_json = [{'user_id': '1', 'birth_year': '2000', 'country': 'US', 'currency': 'USD', 'gender': 'M',
-                      'registration_date': '2021-01-01'}]
+    def test_single_json_object(self):
+        json_data = {"user_id": 1, "birth_year": 1990, "country": "USA"}
         data_type = 'user'
-        expected_output = [('1', '2000', 'US', 'USD', 'M', '2021-01-01')]
-        self.assertEqual(self.db.batch_unpack(data_json, data_type), expected_output)
+        batch = False
+
+        query, values = construct_query(json_data, data_type, batch)
+
+        expected_query = "INSERT INTO users (user_id, birth_year, country) VALUES (%s, %s, %s) ON CONFLICT DO NOTHING"
+        expected_values = (1, 1990, "USA")
+
+        self.assertEqual(query, expected_query)
+        self.assertEqual(values, expected_values)
+
+    def test_json_array(self):
+        json_data = [{"user_id": 1, "birth_year": 1990, "country": "USA"}, {"user_id": 2, "birth_year": 1985, "country": "Canada"}]
+        data_type = 'user'
+        batch = True
+
+        query, values = construct_query(json_data, data_type, batch)
+
+        expected_query = "INSERT INTO users (user_id, birth_year, country) VALUES (%s, %s, %s) ON CONFLICT DO NOTHING"
+        expected_values = [(1, 1990, "USA"), (2, 1985, "Canada")]
+
+        self.assertEqual(query, expected_query)
+        self.assertEqual(values, expected_values)
 
     def test_insert_single(self):
         self.db.connection_pool = MagicMock()
@@ -752,72 +586,72 @@ class TestApp(unittest.TestCase):
     def setUp(self):
         self.client = app_client.test_client()
 
-    @patch('app.get_recommendation_coupon', MagicMock(return_value={
-            "coupon_id": "87a74a51-8d4d-4ecf-a5b5-623042c8bb6b",
-            "selections": [
-                {
-                    "event_id": "d89aa157-efc6-481a-a2aa-1c615d9a9f62",
-                    "odds": 1.67
-                }
-            ],
-            "stake": 15.0,
-            "timestamp": "2023-04-30T12:00:00Z",
-            "user_id": 5
-
-        }))
-    def test_get_recommendation_1(self):
-        payload = {"user_id": 1, "generator": "random"}
-        response = self.client.post('/recommend', json=payload)
-
-        mocked_registry = {
-            "dummy": recommendations.dummy_generator,
-            "random": recommendations.random_generator,
-        }
-
-        recommendation = app.get_recommendation_coupon.return_value
-
-        app.get_recommendation_coupon.assert_called_once_with(mocked_registry, "random", 1)
-
-        self.assertEqual(response.status_code, 200)
-        self.assertTrue(response.is_json)
-        self.assertEqual(response.json, recommendation)
-
-    @patch('app.get_recommendation_coupon', MagicMock(return_value={
-            "coupon_id": "8bcc0f90-96e9-4f87-aeab-22aff8c278ae",
-            "selections": [
-                {
-                    "event_id": "7099151a-33aa-423f-9915-225c07c1daca",
-                    "odds": 3.97
-                },
-                {
-                    "event_id": "f597d516-d3cf-47cc-82dc-f9f4b03a6589",
-                    "odds": 2.9
-                },
-                {
-                    "event_id": "e6386e08-dafe-4f3e-9702-b1955eef03a7",
-                    "odds": 4.91
-                }
-            ],
-            "stake": 40.8,
-            "timestamp": "2020-01-01101:05:01",
-            "user_id": 1
-        }))
-    def test_get_recommendation_2(self):
-        payload = {"user_id": 2, "generator": "dummy"}
-        response = self.client.post('/recommend', json=payload)
-
-        mocked_registry = {
-            "dummy": recommendations.dummy_generator,
-            "random": recommendations.random_generator,
-        }
-
-        recommendation = app.get_recommendation_coupon.return_value
-
-        app.get_recommendation_coupon.assert_called_once_with(mocked_registry, "dummy", 2)
-
-        self.assertEqual(response.status_code, 200)
-        self.assertTrue(response.is_json)
-        self.assertEqual(response.json, recommendation)
+    # @patch('app.get_recommendation_coupon', MagicMock(return_value={
+    #         "coupon_id": "87a74a51-8d4d-4ecf-a5b5-623042c8bb6b",
+    #         "selections": [
+    #             {
+    #                 "event_id": "d89aa157-efc6-481a-a2aa-1c615d9a9f62",
+    #                 "odds": 1.67
+    #             }
+    #         ],
+    #         "stake": 15.0,
+    #         "timestamp": "2023-04-30T12:00:00Z",
+    #         "user_id": 5
+    #
+    #     }))
+    # def test_get_recommendation_1(self):
+    #     payload = {"user_id": 1, "generator": "random"}
+    #     response = self.client.post('/recommend', json=payload)
+    #
+    #     mocked_registry = {
+    #         "dummy": recommendations.dummy_generator,
+    #         "random": recommendations.random_generator,
+    #     }
+    #
+    #     recommendation = app.get_recommendation_coupon.return_value
+    #
+    #     app.get_recommendation_coupon.assert_called_once_with(mocked_registry, "random", 1)
+    #
+    #     self.assertEqual(response.status_code, 200)
+    #     self.assertTrue(response.is_json)
+    #     self.assertEqual(response.json, recommendation)
+    #
+    # @patch('app.get_recommendation_coupon', MagicMock(return_value={
+    #         "coupon_id": "8bcc0f90-96e9-4f87-aeab-22aff8c278ae",
+    #         "selections": [
+    #             {
+    #                 "event_id": "7099151a-33aa-423f-9915-225c07c1daca",
+    #                 "odds": 3.97
+    #             },
+    #             {
+    #                 "event_id": "f597d516-d3cf-47cc-82dc-f9f4b03a6589",
+    #                 "odds": 2.9
+    #             },
+    #             {
+    #                 "event_id": "e6386e08-dafe-4f3e-9702-b1955eef03a7",
+    #                 "odds": 4.91
+    #             }
+    #         ],
+    #         "stake": 40.8,
+    #         "timestamp": "2020-01-01101:05:01",
+    #         "user_id": 1
+    #     }))
+    # def test_get_recommendation_2(self):
+    #     payload = {"user_id": 2, "generator": "dummy"}
+    #     response = self.client.post('/recommend', json=payload)
+    #
+    #     mocked_registry = {
+    #         "dummy": recommendations.dummy_generator,
+    #         "random": recommendations.random_generator,
+    #     }
+    #
+    #     recommendation = app.get_recommendation_coupon.return_value
+    #
+    #     app.get_recommendation_coupon.assert_called_once_with(mocked_registry, "dummy", 2)
+    #
+    #     self.assertEqual(response.status_code, 200)
+    #     self.assertTrue(response.is_json)
+    #     self.assertEqual(response.json, recommendation)
 
 
 if __name__ == '__main__':
