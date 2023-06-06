@@ -15,7 +15,7 @@ def home():
 @app.route('/recommend', methods=["POST"])
 @schemas.json_validator(schemas.recommendation_request_schema)
 def get_recommendation():
-    response = get_recommendation_coupon(recommendation_registry, request.json["generator"], request.json["user_id"])
+    response = get_recommendation_coupon(recommendation_registry, request.json["generator"], request.json["user_id"], request.json["amount"])
     return response
 
 

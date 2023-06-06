@@ -1,7 +1,8 @@
 import random
+from database import Database
 
 
-def dummy_generator(user_id):
+def dummy_generator(user_id, recommendation_amount):
     return {
         "coupon_id": "8bcc0f90-96e9-4f87-aeab-22aff8c278ae",
         "selections": [
@@ -27,7 +28,7 @@ def dummy_generator(user_id):
     }
 
 
-def random_generator(user_id):
+def random_generator(user_id, recommendation_amount):
     recommendations_list = [{
         "coupon_id": "8bcc0f90-96e9-4f87-aeab-22aff8c278ae",
         "selections": [
@@ -96,12 +97,21 @@ def random_generator(user_id):
 
     return recommendations_list[random_int]
 
+def popular_generator(user_id, recommendation_amount):
+    db = Database()
+    events = db.get_most_played_events(recommendation_amount)
+    selections = []
+    for event in events:
+        event_id, outcome, coupon_count = event
+        selections.append({"event_id": event_id, "outcome": outcome, "coupon_count": coupon_count})
+    return {"selections": selections}
 
 recommendation_registry = {
     "dummy": dummy_generator,
     "random": random_generator,
+    "popular": popular_generator
 }
 
 
-def get_recommendation_coupon(registry, generator_type, user_id):
-    return registry[generator_type](user_id)
+def get_recommendation_coupon(registry, generator_type, user_id, recommendation_amount):
+    return registry[generator_type](user_id, recommendation_amount)
