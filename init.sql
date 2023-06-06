@@ -26,8 +26,6 @@ CREATE TABLE historical_events (
     goals_scored_away INT,
     shots_on_target_home INT,
     shots_on_target_away INT,
-    total_shots_home INT,
-    total_shots_away INT,
     possession_percentage_home DECIMAL(5, 2),
     possession_percentage_away DECIMAL(5, 2),
     pass_accuracy_home DECIMAL(5, 2),
