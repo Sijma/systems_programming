@@ -1,11 +1,17 @@
 import unittest
-from unittest.mock import Mock, MagicMock, patch
+from unittest.mock import MagicMock, patch
+from datetime import datetime, timedelta
 import app
+import json
 from app import app as app_client
 from jsonschema import ValidationError
 from database import Database, query_registry, unpack_registry
 import recommendations
 import schemas
+
+import sys
+sys.path.append('./kafka_code')
+import statistics_generator, user_generator, event_generator, coupon_generator
 
 class TestRecommendations(unittest.TestCase):
     def test_registry_contains_expected_entries(self):
@@ -23,14 +29,17 @@ class TestRecommendations(unittest.TestCase):
             "selections": [
                 {
                     "event_id": "7099151a-33aa-423f-9915-225c07c1daca",
+                    "outcome": "away win",
                     "odds": 3.97
                 },
                 {
                     "event_id": "f597d516-d3cf-47cc-82dc-f9f4b03a6589",
+                    "outcome": "away win",
                     "odds": 2.9
                 },
                 {
                     "event_id": "e6386e08-dafe-4f3e-9702-b1955eef03a7",
+                    "outcome": "away win",
                     "odds": 4.91
                 }
             ],
@@ -48,14 +57,17 @@ class TestRecommendations(unittest.TestCase):
             "selections": [
                 {
                     "event_id": "7099151a-33aa-423f-9915-225c07c1daca",
+                    "outcome": "away win",
                     "odds": 3.97
                 },
                 {
                     "event_id": "f597d516-d3cf-47cc-82dc-f9f4b03a6589",
+                    "outcome": "away win",
                     "odds": 2.9
                 },
                 {
                     "event_id": "e6386e08-dafe-4f3e-9702-b1955eef03a7",
+                    "outcome": "away win",
                     "odds": 4.91
                 }
             ],
@@ -74,18 +86,22 @@ class TestRecommendations(unittest.TestCase):
             "selections": [
                 {
                     "event_id": "a5a7a5d5-c5f7-4b33-8dcb-04f757e9a7a9",
+                    "outcome": "away win",
                     "odds": 2.15
                 },
                 {
                     "event_id": "d8f6c1b6-95de-438c-b6d8-72e79b78aa0b",
+                    "outcome": "away win",
                     "odds": 1.85
                 },
                 {
                     "event_id": "8d3c3e1e-2b54-4c3a-97e4-93b70ca23b7f",
+                    "outcome": "away win",
                     "odds": 4.28
                 },
                 {
                     "event_id": "fc8dc476-9c70-4217-bb2d-74d820a6c740",
+                    "outcome": "away win",
                     "odds": 2.6
                 }
             ],
@@ -104,6 +120,7 @@ class TestRecommendations(unittest.TestCase):
             "selections": [
                 {
                     "event_id": "d89aa157-efc6-481a-a2aa-1c615d9a9f62",
+                    "outcome": "away win",
                     "odds": 1.67
                 }
             ],
@@ -120,14 +137,17 @@ class TestRecommendations(unittest.TestCase):
             "selections": [
                 {
                     "event_id": "7099151a-33aa-423f-9915-225c07c1daca",
+                    "outcome": "away win",
                     "odds": 3.97
                 },
                 {
                     "event_id": "f597d516-d3cf-47cc-82dc-f9f4b03a6589",
+                    "outcome": "away win",
                     "odds": 2.9
                 },
                 {
                     "event_id": "e6386e08-dafe-4f3e-9702-b1955eef03a7",
+                    "outcome": "away win",
                     "odds": 4.91
                 }
             ],
@@ -140,14 +160,17 @@ class TestRecommendations(unittest.TestCase):
             "selections": [
                 {
                     "event_id": "7099151a-33aa-423f-9915-225c07c1daca",
+                    "outcome": "away win",
                     "odds": 3.97
                 },
                 {
                     "event_id": "f597d516-d3cf-47cc-82dc-f9f4b03a6589",
+                    "outcome": "away win",
                     "odds": 2.9
                 },
                 {
                     "event_id": "e6386e08-dafe-4f3e-9702-b1955eef03a7",
+                    "outcome": "away win",
                     "odds": 4.91
                 }
             ],
@@ -234,8 +257,8 @@ class TestSchemas(unittest.TestCase):
             "end_timestamp": "2022-01-01T01:00:00Z",
             "event_id": "c09163a4-4e54-4f4a-ae26-4e18c5b5f16a",
             "league": "NFL",
-            "participants": ["Team A", "Team B"],
-            "sport": "Football"
+            "home_team": "Team A",
+            "away_team": "Team B",
         }
         self.assertIsNone(schemas.validate(data, schemas.event_schema))
 
@@ -250,7 +273,8 @@ class TestSchemas(unittest.TestCase):
             "end_timestamp": "2023-04-29T16:00:00Z",
             "event_id": "72d8a5a5-2933-42f3-8e56-8d8dc8805c5a",
             "league": "NBA",
-            "participants": ["Team A"],  # Invalid participants amount
+            "home_team": "Team A",
+            # Missing away_team
             "sport": "Basketball"
         }
         with self.assertRaises(ValidationError):
@@ -262,7 +286,8 @@ class TestSchemas(unittest.TestCase):
             "end_timestamp": "2023-04-29T16:00:00Z",
             "event_id": "invalid_uuid",  # Invalid pattern for event_id
             "league": "NBA",
-            "participants": ["Team A", "Team B"],
+            "home_team": "Team A",
+            "away_team": "Team B",
             "sport": "Basketball"
         }
         with self.assertRaises(ValidationError):
@@ -274,10 +299,12 @@ class TestSchemas(unittest.TestCase):
             "selections": [
                 {
                     "event_id": "6b3aa548-3c79-485d-b1c5-eb064f3725c5",
+                    "outcome": "away win",
                     "odds": 1.5
                 },
                 {
                     "event_id": "c4d51a0e-b1b6-4d14-ae5a-bdb8d84f4964",
+                    "outcome": "away win",
                     "odds": 2.2
                 }
             ],
@@ -297,10 +324,12 @@ class TestSchemas(unittest.TestCase):
             "selections": [
                 {
                     "event_id": "6b3aa548-3c79-485d-b1c5-eb064f3725c5",
+                    "outcome": "away win",
                     "odds": 1.5
                 },
                 {
                     "event_id": "c4d51a0e-b1b6-4d14-ae5a-bdb8d84f4964",
+                    "outcome": "away win",
                     "odds": 2.2
                 }
             ],
@@ -316,10 +345,12 @@ class TestSchemas(unittest.TestCase):
             "selections": [
                 {
                     "event_id": "6b3aa548-3c79-485d-b1c5-eb064f3725c5",
+                    "outcome": "away win",
                     "odds": 1.5
                 },
                 {
                     "event_id": "c4d51a0e-b1b6-4d14-ae5a-bdb8d84f4964",
+                    "outcome": "away win",
                     "odds": 2.2
                 }
             ],
@@ -330,7 +361,99 @@ class TestSchemas(unittest.TestCase):
         with self.assertRaises(ValidationError):
             schemas.validate(data, schemas.coupon_schema)
 
-# Do we only test using mock database or should we also create temporary, 'real' databases for some tests?
+    def test_valid_historical_events_schema(self):
+        data = {
+            "event_id": "0f21a456-c13d-4ed2-8c20-72f34d05dd51",
+            "result": "home win",
+            "goals_scored_home": 2,
+            "goals_scored_away": 1,
+            "shots_on_target_home": 5,
+            "shots_on_target_away": 3,
+            "total_shots_home": 10,
+            "total_shots_away": 8,
+            "possession_percentage_home": 58.5,
+            "possession_percentage_away": 41.5,
+            "pass_accuracy_home": 85.2,
+            "pass_accuracy_away": 78.9,
+            "fouls_committed_home": 12,
+            "fouls_committed_away": 8,
+            "corners_home": 4,
+            "corners_away": 6,
+            "yellow_cards_home": 2,
+            "yellow_cards_away": 3,
+            "red_cards_home": 0,
+            "red_cards_away": 1,
+            "offsides_home": 1,
+            "offsides_away": 2,
+            "saves_home": 3,
+            "saves_away": 5
+        }
+        self.assertIsNone(schemas.validate(data, schemas.statistics_schema))
+
+    def test_invalid_historical_events_schema(self):
+        data = "invalid json"
+        with self.assertRaises(ValidationError):
+            schemas.validate(data, schemas.statistics_schema)
+
+        data = {
+            "event_id": "invalid id",  # Invalid event_id
+            "result": "home win",
+            "goals_scored_home": 2,
+            "goals_scored_away": 1,
+            "shots_on_target_home": 5,
+            "shots_on_target_away": 3,
+            "total_shots_home": 10,
+            "total_shots_away": 8,
+            "possession_percentage_home": 58.5,
+            "possession_percentage_away": 41.5,
+            "pass_accuracy_home": 85.2,
+            "pass_accuracy_away": 78.9,
+            "fouls_committed_home": 12,
+            "fouls_committed_away": 8,
+            "corners_home": 4,
+            "corners_away": 6,
+            "yellow_cards_home": 2,
+            "yellow_cards_away": 3,
+            "red_cards_home": 0,
+            "red_cards_away": 1,
+            "offsides_home": 1,
+            "offsides_away": 2,
+            "saves_home": 3,
+            "saves_away": 5
+        }
+        with self.assertRaises(ValidationError):
+            schemas.validate(data, schemas.statistics_schema)
+
+        data = {
+            "event_id": "0f21a456-c13d-4ed2-8c20-72f34d05dd51",
+            "result": "home win",
+            "goals_scored_home": 2,
+            "goals_scored_away": 1,
+            "shots_on_target_home": 5,
+            "shots_on_target_away": 3,
+            "total_shots_home": 10,
+            "total_shots_away": 8,
+            "possession_percentage_home": 58.5,
+            "possession_percentage_away": 41.5,
+            "pass_accuracy_home": 85.2,
+            "pass_accuracy_away": 78.9,
+            "fouls_committed_home": 12,
+            "fouls_committed_away": 8,
+            "corners_home": 4,
+            "corners_away": 6,
+            "yellow_cards_home": 2,
+            "yellow_cards_away": 3,
+            "red_cards_home": 0,
+            "red_cards_away": 1,
+            "offsides_home": 1,
+            # Missing offsides_away
+            "saves_home": 3,
+            "saves_away": 5
+        }
+        with self.assertRaises(ValidationError):
+            schemas.validate(data, schemas.statistics_schema)
+
+
 class TestDatabase(unittest.TestCase):
     def setUp(self):
         self.db = Database()
@@ -429,6 +552,201 @@ class TestDatabase(unittest.TestCase):
         mock_conn.rollback.assert_called_once()
         mock_cur.close.assert_called_once()
         self.db.connection_pool.putconn.assert_called_once_with(mock_conn)
+
+class UserGeneratorTests(unittest.TestCase):
+    def test_generate_random_user(self):
+        user = user_generator.generate_random_user()
+
+        self.assertIsInstance(user, dict)
+        self.assertIsNone(schemas.validate(user, schemas.user_schema))
+
+    @patch('user_generator.producer')
+    def test_publish_user(self, mock_producer):
+        user = {
+            "birth_year": 1990,
+            "country": "USA",
+            "currency": "USD",
+            "gender": "Male",
+            "registration_date": "2023-01-01",
+            "user_id": 12345
+        }
+
+        user_generator.publish_user(user)
+
+        mock_producer.produce.assert_called_once_with("user", value=json.dumps(user))
+
+class EventGeneratorTests(unittest.TestCase):
+    def test_generate_start_and_end_time(self):
+        begin_timestamp, end_timestamp = event_generator.generate_start_and_end_time()
+
+        self.assertIsInstance(begin_timestamp, datetime)
+        self.assertIsInstance(end_timestamp, datetime)
+        self.assertLessEqual(begin_timestamp, end_timestamp)
+
+        thirty_days_ago = datetime.now() - timedelta(days=30)
+        thirty_days_from_now = datetime.now() + timedelta(days=30)
+        self.assertGreaterEqual(begin_timestamp, thirty_days_ago)
+        self.assertLessEqual(begin_timestamp, thirty_days_from_now)
+
+        self.assertEqual(end_timestamp, begin_timestamp + timedelta(hours=2))
+
+    def test_generate_random_event(self):
+        event = event_generator.generate_random_event()
+
+        self.assertIsInstance(event, dict)
+        self.assertIsNone(schemas.validate(event, schemas.event_schema))
+
+    @patch('event_generator.producer')
+    def test_publish_event(self, mock_producer):
+        event = {
+            "begin_timestamp": "2023-01-01T19:00:00",
+            "country": "USA",
+            "end_timestamp": "2023-01-01T21:00:00",
+            "event_id": "12345678-1234-1234-1234-1234567890AB",
+            "league": "Sample League",
+            "home_team": "Team A",
+            "away_team": "Team B"
+        }
+
+        event_generator.publish_event(event)
+
+        mock_producer.produce.assert_called_once_with("event", value=json.dumps(event))
+
+class CouponGeneratorTests(unittest.TestCase):
+    @patch('coupon_generator.db')
+    def test_generate_selections(self, mock_db):
+        coupon_timestamp = datetime.now() - timedelta(days=1)
+        mock_db.get_random_event_id_after_timestamp.return_value = "c09163a4-4e54-4f4a-ae26-4e18c5b5f16a"
+
+        selection = coupon_generator.generate_selections(coupon_timestamp)
+
+        self.assertIsNotNone(selection)
+        self.assertEqual(selection['event_id'], "c09163a4-4e54-4f4a-ae26-4e18c5b5f16a")
+        self.assertIn(selection['outcome'], ['home win', 'away win', 'draw'])
+        self.assertGreaterEqual(selection['odds'], 1.0)
+        self.assertLessEqual(selection['odds'], 2.0)
+
+    @patch('coupon_generator.db')
+    def test_generate_random_coupon(self, mock_db):
+        today = datetime.now()
+        today_minus_90 = today - timedelta(days=90)
+
+        mock_db.get_random_event_id_after_timestamp.return_value = "c09163a4-4e54-4f4a-ae26-4e18c5b5f16a"
+        mock_db.get_random_user_id.return_value = 100
+
+        coupon = coupon_generator.generate_random_coupon()
+
+        self.assertIsNotNone(coupon)
+        self.assertGreaterEqual(len(coupon['selections']), 1)
+        self.assertLessEqual(len(coupon['selections']), 10)
+        self.assertGreaterEqual(coupon['stake'], 1.0)
+        self.assertLessEqual(coupon['stake'], 10.0)
+        self.assertLessEqual(datetime.fromisoformat(coupon['timestamp']), today)
+        self.assertGreaterEqual(datetime.fromisoformat(coupon['timestamp']), today_minus_90)
+
+        self.assertIsNone(schemas.validate(coupon, schemas.coupon_schema))
+
+    @patch('coupon_generator.producer')
+    def test_publish_coupon(self, mock_producer):
+        coupon = {
+            "coupon_id": "12345678-1234-1234-1234-1234567890AB",
+            "selections": [
+                {"event_id": "event1", "outcome": "home win", "odds": 1.5},
+                {"event_id": "event2", "outcome": "draw", "odds": 2.0}
+            ],
+            "stake": 5.0,
+            "timestamp": "2023-01-01T19:00:00",
+            "user_id": "user123"
+        }
+
+        coupon_generator.publish_coupon(coupon)
+
+        mock_producer.produce.assert_called_once_with("coupon", value=json.dumps(coupon))
+
+class StatisticsGeneratorTests(unittest.TestCase):
+    def test_generate_winning_statistics(self):
+        goals_scored, shots_on_target, possession_percentage, pass_accuracy = statistics_generator.generate_winning_statistics()
+
+        self.assertGreaterEqual(goals_scored, 2)
+        self.assertGreaterEqual(shots_on_target, goals_scored + 3)
+        self.assertGreaterEqual(possession_percentage, 50)
+        self.assertLessEqual(possession_percentage, 60)
+        self.assertGreaterEqual(pass_accuracy, 70)
+        self.assertLessEqual(pass_accuracy, 90)
+
+    def test_generate_losing_statistics(self):
+        goals_scored, shots_on_target, pass_accuracy = statistics_generator.generate_losing_statistics()
+
+        self.assertGreaterEqual(goals_scored, 0)
+        self.assertGreaterEqual(shots_on_target, goals_scored - 1)
+        self.assertGreaterEqual(pass_accuracy, 40)
+        self.assertLessEqual(pass_accuracy, 60)
+
+    def test_generate_unaffected_statistics(self):
+        fouls_committed, corners, yellow_cards, red_cards, offsides = statistics_generator.generate_unaffected_statistics()
+
+        self.assertGreaterEqual(fouls_committed, 5)
+        self.assertLessEqual(fouls_committed, 15)
+        self.assertGreaterEqual(corners, 0)
+        self.assertLessEqual(corners, 10)
+        self.assertGreaterEqual(yellow_cards, 0)
+        self.assertLessEqual(yellow_cards, 3)
+        self.assertGreaterEqual(red_cards, 0)
+        self.assertLessEqual(red_cards, 1)
+        self.assertGreaterEqual(offsides, 0)
+        self.assertLessEqual(offsides, 5)
+
+    def test_generate_saves(self):
+        opposing_shots_on_target = 10
+        opposing_goals_scored = 3
+
+        saves = statistics_generator.generate_saves(opposing_shots_on_target, opposing_goals_scored)
+
+        self.assertGreaterEqual(saves, 0)
+        self.assertLessEqual(saves, opposing_shots_on_target - opposing_goals_scored)
+
+    @patch('statistics_generator.db')
+    def test_generate_random_historical_data(self, mock_db):
+        event_id = '123'
+        mock_db.get_random_event_id_for_statistics.return_value = event_id
+
+        statistics = statistics_generator.generate_random_historical_data()
+
+        self.assertIsNotNone(statistics)
+        self.assertEqual(statistics['event_id'], event_id)
+
+        # Add more assertions to validate the generated statistics based on different result scenarios
+
+    @patch('statistics_generator.producer')
+    def test_publish_statistics(self, mock_producer):
+        statistics = {
+            'event_id': '6b3aa548-3c79-485d-b1c5-eb064f3725c5',
+            'result': 'home win',
+            'goals_scored_home': 3,
+            'goals_scored_away': 1,
+            'shots_on_target_home': 10,
+            'shots_on_target_away': 5,
+            'possession_percentage_home': 58.21,
+            'possession_percentage_away': 41.79,
+            'pass_accuracy_home': 84.63,
+            'pass_accuracy_away': 76.92,
+            'fouls_committed_home': 12,
+            'fouls_committed_away': 8,
+            'corners_home': 4,
+            'corners_away': 6,
+            'yellow_cards_home': 2,
+            'yellow_cards_away': 1,
+            'red_cards_home': 0,
+            'red_cards_away': 1,
+            'offsides_home': 2,
+            'offsides_away': 1,
+            'saves_home': 3,
+            'saves_away': 4
+        }
+
+        statistics_generator.publish_statistics(statistics)
+
+        mock_producer.produce.assert_called_once_with("statistics", value=json.dumps(statistics))
 
 class TestApp(unittest.TestCase):
     def setUp(self):
