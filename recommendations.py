@@ -7,14 +7,17 @@ def dummy_generator(user_id):
         "selections": [
             {
                 "event_id": "7099151a-33aa-423f-9915-225c07c1daca",
+                "outcome": "away win",
                 "odds": 3.97
             },
             {
                 "event_id": "f597d516-d3cf-47cc-82dc-f9f4b03a6589",
+                "outcome": "away win",
                 "odds": 2.9
             },
             {
                 "event_id": "e6386e08-dafe-4f3e-9702-b1955eef03a7",
+                "outcome": "away win",
                 "odds": 4.91
             }
         ],
@@ -30,14 +33,17 @@ def random_generator(user_id):
         "selections": [
             {
                 "event_id": "7099151a-33aa-423f-9915-225c07c1daca",
+                "outcome": "away win",
                 "odds": 3.97
             },
             {
                 "event_id": "f597d516-d3cf-47cc-82dc-f9f4b03a6589",
+                "outcome": "away win",
                 "odds": 2.9
             },
             {
                 "event_id": "e6386e08-dafe-4f3e-9702-b1955eef03a7",
+                "outcome": "away win",
                 "odds": 4.91
             }
         ],
@@ -49,18 +55,22 @@ def random_generator(user_id):
         "selections": [
             {
                 "event_id": "a5a7a5d5-c5f7-4b33-8dcb-04f757e9a7a9",
+                "outcome": "away win",
                 "odds": 2.15
             },
             {
                 "event_id": "d8f6c1b6-95de-438c-b6d8-72e79b78aa0b",
+                "outcome": "away win",
                 "odds": 1.85
             },
             {
                 "event_id": "8d3c3e1e-2b54-4c3a-97e4-93b70ca23b7f",
+                "outcome": "away win",
                 "odds": 4.28
             },
             {
                 "event_id": "fc8dc476-9c70-4217-bb2d-74d820a6c740",
+                "outcome": "away win",
                 "odds": 2.6
             }
         ],
@@ -72,6 +82,7 @@ def random_generator(user_id):
         "selections": [
             {
                 "event_id": "d89aa157-efc6-481a-a2aa-1c615d9a9f62",
+                "outcome": "away win",
                 "odds": 1.67
             }
         ],

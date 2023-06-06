@@ -79,3 +79,17 @@ class Database:
             # If an eligible event_id is found, return it; otherwise, return None
             event_id = result[0] if result else None
             return event_id
+
+    def get_random_event_id_after_timestamp(self, coupon_timestamp):
+        query = """
+            SELECT event_id
+            FROM events
+            WHERE begin_timestamp > %s
+            ORDER BY random()
+            LIMIT 1
+        """
+        with self:
+            self.cur.execute(query, (coupon_timestamp,))
+            result = self.cur.fetchone()
+            event_id = result[0] if result else None
+            return event_id

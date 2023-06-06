@@ -14,4 +14,4 @@ ENV POSTGRES_DB=betting_recommendation_system
 ENV KAFKA_HOST=kafka
 ENV KAFKA_PORT=9092
 
-CMD ["python", "-m", "unittest", "discover", "-s", "tests"]
+ENTRYPOINT ["python", "-m", "unittest", "discover", "-s", "tests"]

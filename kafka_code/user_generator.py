@@ -25,6 +25,7 @@ def publish_user(user):
     producer.produce("user", value=json.dumps(user))
 
 
-while True:
-    publish_user(generate_random_user())
-    sleep(__time_to_sleep)
+if __name__ == '__main__':
+    while True:
+        publish_user(generate_random_user())
+        sleep(__time_to_sleep)

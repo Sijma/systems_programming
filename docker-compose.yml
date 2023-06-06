@@ -98,6 +98,8 @@ services:
   tests:
       build:
         context: ./tests
+      stdin_open: true
+      tty: true
       depends_on:
         - postgres
       volumes:
