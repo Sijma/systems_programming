@@ -1,7 +1,6 @@
 from flask import Flask, request
 from recommendations import get_recommendation_coupon, recommendation_registry
 import schemas
-import database as db
 
 app = Flask(__name__)
 app.json.sort_keys = False

@@ -8,17 +8,35 @@ TYPE_EVENT = "event"
 TYPE_COUPON = "coupon"
 TYPE_STATISTICS = "statistics"
 
-query_registry = {
-    TYPE_USER: "INSERT INTO users (user_id, birth_year, country, currency, gender, registration_date) VALUES (%s, %s, %s, %s, %s, %s) ON CONFLICT DO NOTHING",
-    TYPE_EVENT: "INSERT INTO events (event_id, begin_timestamp, end_timestamp, country, league, home_team, away_team) VALUES (%s, %s, %s, %s, %s, %s, %s) ON CONFLICT DO NOTHING",
-    TYPE_COUPON: "INSERT INTO coupons (coupon_id, selections, stake, timestamp, user_id) VALUES (%s, %s, %s, %s, %s) ON CONFLICT DO NOTHING"
+table_registry = {
+    TYPE_USER: "users",
+    TYPE_EVENT: "events",
+    TYPE_COUPON: "coupons",
+    TYPE_STATISTICS: "historical_events"
 }
 
-unpack_registry = {
-    TYPE_USER: lambda user_json: (user_json['user_id'], user_json['birth_year'], user_json['country'], user_json['currency'], user_json['gender'], user_json['registration_date']),
-    TYPE_EVENT: lambda event_json: (event_json['event_id'], event_json['begin_timestamp'], event_json['end_timestamp'], event_json['country'], event_json['league'], event_json['home_team'], event_json['away_team']),
-    TYPE_COUPON: lambda coupon_json: (coupon_json['coupon_id'], json.dumps(coupon_json['selections']),coupon_json['stake'],coupon_json['timestamp'],coupon_json['user_id'])
-}
+
+def construct_query(json_data, data_type, batch=False):
+    table_name = table_registry[data_type]
+
+    if not batch:
+        json_data = [json_data]
+
+    first_json = json_data[0]
+    keys = list(first_json.keys())
+    values = []
+
+    for record in json_data:
+        values.append(tuple(record[key] for key in keys))
+
+    placeholders = ', '.join(['%s'] * len(keys))
+
+    query = f"INSERT INTO {table_name} ({', '.join(keys)}) VALUES ({placeholders}) ON CONFLICT DO NOTHING"
+
+    if not batch:
+        values = values[0]
+
+    return query, values
 
 class Database:
     _instance = None
@@ -49,19 +67,12 @@ class Database:
         self.cur.close()
         self.connection_pool.putconn(self.conn)
 
-    def batch_unpack(self, data_json, data_type):
-        unpack_function = unpack_registry[data_type]
-        data_list = [unpack_function(record) for record in data_json]
-        return data_list
-
     def insert(self, data_json, data_type, batch=False):
         with self:
-            query = query_registry[data_type]
+            query, data = construct_query(data_json, data_type, batch)
             if batch:
-                data = self.batch_unpack(data_json, data_type)
                 self.cur.executemany(query, data) # TODO: Consider using fast_executemany. Apparently executemany is just a loop of execute which is bad for performance
             else:
-                data = unpack_registry[data_type](data_json)
                 self.cur.execute(query, data)
 
     def get_random_event_id_for_statistics(self):
