@@ -1,11 +1,12 @@
 import os
 import json
 import random
-from database import Database
 from time import sleep
 from confluent_kafka import Producer
 
-MESSAGES_PER_SECOND = 1
+from database import Database
+
+MESSAGES_PER_SECOND = 5
 __time_to_sleep = 1 / MESSAGES_PER_SECOND
 
 producer = Producer({"bootstrap.servers": f"{os.environ.get('KAFKA_HOST')}:{os.environ.get('KAFKA_PORT')}"})

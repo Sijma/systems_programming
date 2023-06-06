@@ -12,9 +12,10 @@ recommendation_request_schema = {
     "type": "object",
     "properties": {
         "user_id": {"type": "integer", "minimum": 1},
-        "generator": {"type": "string", "enum": ["dummy", "random"]}
+        "generator": {"type": "string", "enum": ["dummy", "random", "popular"]},
+        "amount": {"type": "integer", "minimum": 1},
     },
-    "required": ["user_id", "generator"],
+    "required": ["user_id", "generator", "amount"],
     "additionalProperties": False
 }
 

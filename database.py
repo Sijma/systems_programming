@@ -2,18 +2,22 @@ import os
 import json
 import psycopg2
 from psycopg2 import pool
-import schemas
+
+TYPE_USER = "user"
+TYPE_EVENT = "event"
+TYPE_COUPON = "coupon"
+TYPE_STATISTICS = "statistics"
 
 query_registry = {
-    schemas.TYPE_USER: "INSERT INTO users (user_id, birth_year, country, currency, gender, registration_date) VALUES (%s, %s, %s, %s, %s, %s) ON CONFLICT DO NOTHING",
-    schemas.TYPE_EVENT: "INSERT INTO events (event_id, begin_timestamp, end_timestamp, country, league, participants, sport) VALUES (%s, %s, %s, %s, %s, %s, %s) ON CONFLICT DO NOTHING",
-    schemas.TYPE_COUPON: "INSERT INTO coupons (coupon_id, selections, stake, timestamp, user_id) VALUES (%s, %s, %s, %s, %s) ON CONFLICT DO NOTHING"
+    TYPE_USER: "INSERT INTO users (user_id, birth_year, country, currency, gender, registration_date) VALUES (%s, %s, %s, %s, %s, %s) ON CONFLICT DO NOTHING",
+    TYPE_EVENT: "INSERT INTO events (event_id, begin_timestamp, end_timestamp, country, league, home_team, away_team) VALUES (%s, %s, %s, %s, %s, %s, %s) ON CONFLICT DO NOTHING",
+    TYPE_COUPON: "INSERT INTO coupons (coupon_id, selections, stake, timestamp, user_id) VALUES (%s, %s, %s, %s, %s) ON CONFLICT DO NOTHING"
 }
 
 unpack_registry = {
-    schemas.TYPE_USER: lambda user_json: (user_json['user_id'], user_json['birth_year'], user_json['country'], user_json['currency'], user_json['gender'], user_json['registration_date']),
-    schemas.TYPE_EVENT: lambda event_json: (event_json['event_id'], event_json['begin_timestamp'], event_json['end_timestamp'], event_json['country'], event_json['league'], event_json['participants'], event_json['sport']),
-    schemas.TYPE_COUPON: lambda coupon_json: (coupon_json['coupon_id'], json.dumps(coupon_json['selections']),coupon_json['stake'],coupon_json['timestamp'],coupon_json['user_id'])
+    TYPE_USER: lambda user_json: (user_json['user_id'], user_json['birth_year'], user_json['country'], user_json['currency'], user_json['gender'], user_json['registration_date']),
+    TYPE_EVENT: lambda event_json: (event_json['event_id'], event_json['begin_timestamp'], event_json['end_timestamp'], event_json['country'], event_json['league'], event_json['home_team'], event_json['away_team']),
+    TYPE_COUPON: lambda coupon_json: (coupon_json['coupon_id'], json.dumps(coupon_json['selections']),coupon_json['stake'],coupon_json['timestamp'],coupon_json['user_id'])
 }
 
 class Database:
@@ -93,3 +97,26 @@ class Database:
             result = self.cur.fetchone()
             event_id = result[0] if result else None
             return event_id
+    def get_random_user_id(self):
+        query = "SELECT user_id FROM users ORDER BY random() LIMIT 1"
+        with self:
+            self.cur.execute(query)
+            result = self.cur.fetchone()
+            user_id = result[0]
+            return user_id
+
+    def get_most_played_events(self, amount):
+        query = """
+            SELECT e.event_id, s.selection ->> 'outcome' AS outcome, COUNT(*) AS appearances
+            FROM events e
+            INNER JOIN (
+                SELECT s.selection
+                FROM coupons c, jsonb_array_elements(c.selections) AS s(selection)
+            ) AS s ON s.selection ->> 'event_id' = e.event_id::text
+            GROUP BY e.event_id, outcome
+            ORDER BY appearances DESC
+            LIMIT %s;
+        """
+        with self:
+            self.cur.execute(query, (amount,))
+            return self.cur.fetchall()

@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 from time import sleep
 from confluent_kafka import Producer
 
-MESSAGES_PER_SECOND = 5
+MESSAGES_PER_SECOND = 10
 __time_to_sleep = 1 / MESSAGES_PER_SECOND
 
 producer = Producer({"bootstrap.servers": f"{os.environ.get('KAFKA_HOST')}:{os.environ.get('KAFKA_PORT')}"})

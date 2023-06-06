@@ -84,16 +84,24 @@ services:
     restart: always
     depends_on:
       - kafka
+      - event_generator
       - kafka_consumer
     networks:
       - app-network
     volumes:
       - ./kafka_code/generator_requirements.txt:/generator_requirements.txt
       - ./kafka_code/coupon_generator.py:/coupon_generator.py
+      - ./database.py:/database.py
     command: sh -c "pip install -r generator_requirements.txt && python -u coupon_generator.py"
     environment:
       KAFKA_HOST: kafka
       KAFKA_PORT: 9092
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: coupon_recommendation_system
+      POSTGRES_PASSWORD: Xq8@SHF0S1&sM7v3
+      POSTGRES_DB: betting_recommendation_system
+
 
   tests:
       build:

@@ -5,6 +5,7 @@ import uuid
 from datetime import datetime, timedelta
 from time import sleep
 from confluent_kafka import Producer
+
 from database import Database
 
 MESSAGES_PER_SECOND = 10
