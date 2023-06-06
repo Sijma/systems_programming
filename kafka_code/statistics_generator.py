@@ -12,7 +12,7 @@ producer = Producer({"bootstrap.servers": f"{os.environ.get('KAFKA_HOST')}:{os.e
 db = Database()
 
 def generate_winning_statistics():
-    goals_scored = random.randint(2, 5)
+    goals_scored = random.randint(3, 5)
     shots_on_target = random.randint(goals_scored + 3, goals_scored + 6)
     possession_percentage = round(random.uniform(50, 60), 2)
     pass_accuracy = round(random.uniform(70, 90), 2)
@@ -22,7 +22,7 @@ def generate_winning_statistics():
 
 def generate_losing_statistics():
     goals_scored = random.randint(0, 2)
-    shots_on_target = random.randint(goals_scored - 1, goals_scored + 2)
+    shots_on_target = random.randint(goals_scored, goals_scored + 2)
     pass_accuracy = round(random.uniform(40, 60), 2)
 
     return goals_scored, shots_on_target, pass_accuracy
@@ -39,10 +39,13 @@ def generate_unaffected_statistics():
 
 
 def generate_saves(opposing_shots_on_target, opposing_goals_scored):
-    min_saves = opposing_shots_on_target // 2
+    min_saves = 0
     max_saves = opposing_shots_on_target - opposing_goals_scored
-    saves = random.randint(min_saves, max_saves)
 
+    if min_saves != max_saves:
+        saves = random.randint(min_saves, max_saves)
+    else:
+        saves = min_saves
     return saves
 
 def generate_random_historical_data():
@@ -105,6 +108,7 @@ def generate_random_historical_data():
 def publish_statistics(statistics):
     producer.produce("statistics", value=json.dumps(statistics))
 
-while True:
-    publish_statistics(generate_random_historical_data())
-    sleep(__time_to_sleep)
+if __name__ == '__main__':
+    while True:
+        publish_statistics(generate_random_historical_data())
+        sleep(__time_to_sleep)

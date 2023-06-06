@@ -2,7 +2,7 @@ import os
 from confluent_kafka import Consumer
 from database import Database
 import json
-from schemas import TYPE_USER, TYPE_EVENT, TYPE_COUPON
+from schemas import TYPE_USER, TYPE_EVENT, TYPE_COUPON, TYPE_STATISTICS
 from multiprocessing import Process
 import sys
 
@@ -13,7 +13,7 @@ conf = {
     'enable.auto.commit': False
 }
 
-topics = [TYPE_USER, TYPE_EVENT, TYPE_COUPON]
+topics = [TYPE_USER, TYPE_EVENT, TYPE_COUPON, TYPE_STATISTICS]
 
 print("connected")
 
