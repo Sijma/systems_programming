@@ -1,3 +1,4 @@
+import signal
 import os
 from confluent_kafka import Consumer
 from database import Database
@@ -66,6 +67,7 @@ try:
 except KeyboardInterrupt:
     print('KeyboardInterrupt: Stopping consumers and threads...')
     for p in processes:
+        os.kill(p.pid, signal.SIGINT)
         p.join()
 
     print('Consumers and threads stopped gracefully.')
