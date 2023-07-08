@@ -4,12 +4,12 @@ services:
     image: postgres:latest
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready" ]
-      interval: 10s
+      interval: 5s
       timeout: 5s
       retries: 5
     restart: always
     networks:
-      - app-network
+      - db-network
     environment:
       POSTGRES_USER: coupon_recommendation_system
       POSTGRES_PASSWORD: Xq8@SHF0S1&sM7v3
@@ -20,6 +20,27 @@ services:
     ports:
       - "5432:5432"
 
+  database:
+    build: ./database
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "wget --quiet --tries=1 --spider http://localhost:8000/ || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - db-network
+      - dal-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: coupon_recommendation_system
+      POSTGRES_PASSWORD: Xq8@SHF0S1&sM7v3
+      POSTGRES_DB: betting_recommendation_system
+
   kafka:
     image: bitnami/kafka:latest
     healthcheck:
@@ -29,14 +50,14 @@ services:
       retries: 10
     restart: always
     networks:
-      - app-network
+      - kafka-network
     environment:
       ALLOW_PLAINTEXT_LISTENER: 'yes'
 
   init-kafka:
     image: confluentinc/cp-kafka:latest
     networks:
-      - app-network
+      - kafka-network
     depends_on:
       kafka:
         condition: service_healthy
@@ -57,24 +78,21 @@ services:
     image: python:latest
     restart: always
     depends_on:
-      postgres:
+      database:
         condition: service_healthy
       init-kafka:
         condition: service_completed_successfully
     networks:
-      - app-network
+      - kafka-network
+      - dal-network
     volumes:
-      - ./requirements.txt:/requirements.txt
-      - ./kafka_consumer.py:/kafka_consumer.py
-      - ./database.py:/database.py
+      - ./kafka_code/requirements.txt:/requirements.txt
+      - ./kafka_code/kafka_consumer.py:/kafka_consumer.py
       - ./schemas.py:/schemas.py
     command: sh -c "pip install -r requirements.txt && python -u kafka_consumer.py"
     environment:
-      POSTGRES_HOST: postgres
-      POSTGRES_PORT: 5432
-      POSTGRES_USER: coupon_recommendation_system
-      POSTGRES_PASSWORD: Xq8@SHF0S1&sM7v3
-      POSTGRES_DB: betting_recommendation_system
+      FASTAPI_HOST: database
+      FASTAPI_PORT: 8000
       KAFKA_HOST: kafka
       KAFKA_PORT: 9092
       SO_REUSEPORT: 1
@@ -86,11 +104,11 @@ services:
       kafka_consumer:
         condition: service_started
     networks:
-      - app-network
+      - kafka-network
     volumes:
-      - ./kafka_code/generator_requirements.txt:/generator_requirements.txt
+      - ./kafka_code/requirements.txt:/requirements.txt
       - ./kafka_code/user_generator.py:/user_generator.py
-    command: sh -c "pip install -r generator_requirements.txt && python -u user_generator.py"
+    command: sh -c "pip install -r requirements.txt && python -u user_generator.py"
     environment:
       KAFKA_HOST: kafka
       KAFKA_PORT: 9092
@@ -102,11 +120,11 @@ services:
       kafka_consumer:
         condition: service_started
     networks:
-      - app-network
+      - kafka-network
     volumes:
-      - ./kafka_code/generator_requirements.txt:/generator_requirements.txt
+      - ./kafka_code/requirements.txt:/requirements.txt
       - ./kafka_code/event_generator.py:/event_generator.py
-    command: sh -c "pip install -r generator_requirements.txt && python -u event_generator.py"
+    command: sh -c "pip install -r requirements.txt && python -u event_generator.py"
     environment:
       KAFKA_HOST: kafka
       KAFKA_PORT: 9092
@@ -120,20 +138,17 @@ services:
       kafka_consumer:
         condition: service_started
     networks:
-      - app-network
+      - dal-network
+      - kafka-network
     volumes:
-      - ./kafka_code/generator_requirements.txt:/generator_requirements.txt
+      - ./kafka_code/requirements.txt:/requirements.txt
       - ./kafka_code/coupon_generator.py:/coupon_generator.py
-      - ./database.py:/database.py
-    command: sh -c "pip install -r generator_requirements.txt && python -u coupon_generator.py"
+    command: sh -c "pip install -r requirements.txt && python -u coupon_generator.py"
     environment:
+      FASTAPI_HOST: database
+      FASTAPI_PORT: 8000
       KAFKA_HOST: kafka
       KAFKA_PORT: 9092
-      POSTGRES_HOST: postgres
-      POSTGRES_PORT: 5432
-      POSTGRES_USER: coupon_recommendation_system
-      POSTGRES_PASSWORD: Xq8@SHF0S1&sM7v3
-      POSTGRES_DB: betting_recommendation_system
 
   statistics_generator:
     image: python:latest
@@ -144,20 +159,17 @@ services:
       kafka_consumer:
         condition: service_started
     networks:
-      - app-network
+      - kafka-network
+      - dal-network
     volumes:
-      - ./kafka_code/generator_requirements.txt:/generator_requirements.txt
+      - ./kafka_code/requirements.txt:/requirements.txt
       - ./kafka_code/statistics_generator.py:/statistics_generator.py
-      - ./database.py:/database.py
-    command: sh -c "pip install -r generator_requirements.txt && python -u statistics_generator.py"
+    command: sh -c "pip install -r requirements.txt && python -u statistics_generator.py"
     environment:
+      FASTAPI_HOST: database
+      FASTAPI_PORT: 8000
       KAFKA_HOST: kafka
       KAFKA_PORT: 9092
-      POSTGRES_HOST: postgres
-      POSTGRES_PORT: 5432
-      POSTGRES_USER: coupon_recommendation_system
-      POSTGRES_PASSWORD: Xq8@SHF0S1&sM7v3
-      POSTGRES_DB: betting_recommendation_system
 
 
   tests:
@@ -166,39 +178,33 @@ services:
       stdin_open: true
       tty: true
       depends_on:
-        postgres:
+        database:
           condition: service_healthy
       volumes:
         - .:/app
         - ./tests:/app/tests
-      networks:
-        - app-network
 
   app:
     build: .
     restart: always
-    networks:
-      - app-network
     stop_signal: SIGINT
     ports:
       - "5000:5000"
     volumes:
       - .:/app
     depends_on:
-      postgres:
+      database:
         condition: service_healthy
       tests:
         condition: service_completed_successfully
 
     environment:
-      POSTGRES_HOST: postgres
-      POSTGRES_PORT: 5432
-      POSTGRES_USER: coupon_recommendation_system
-      POSTGRES_PASSWORD: Xq8@SHF0S1&sM7v3
-      POSTGRES_DB: betting_recommendation_system
+      FASTAPI_HOST: database
+      FASTAPI_PORT: 8000
       KAFKA_HOST: kafka
       KAFKA_PORT: 9092
 
 networks:
-  app-network:
-    driver: bridge
+  db-network:
+  dal-network:
+  kafka-network:

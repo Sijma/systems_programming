@@ -1,6 +1,5 @@
 import random
-from database import Database
-
+import requests
 
 def dummy_generator(user_id, recommendation_amount):
     return {
@@ -97,9 +96,16 @@ def random_generator(user_id, recommendation_amount):
 
     return recommendations_list[random_int]
 
+def get_most_played_events(amount):
+    url = f"http://localhost:8000/most_played_events/{amount}"
+    response = requests.get(url)
+    if response.status_code != 200:
+        return None
+    data = response.json()
+    return data['events']
+
 def popular_generator(user_id, recommendation_amount):
-    db = Database()
-    events = db.get_most_played_events(recommendation_amount)
+    events = get_most_played_events(recommendation_amount)
     selections = []
     for event in events:
         event_id, outcome, coupon_count = event
