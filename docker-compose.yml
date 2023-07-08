@@ -33,14 +33,34 @@ services:
     environment:
       ALLOW_PLAINTEXT_LISTENER: 'yes'
 
+  init-kafka:
+    image: confluentinc/cp-kafka:latest
+    networks:
+      - app-network
+    depends_on:
+      kafka:
+        condition: service_healthy
+    entrypoint: [ '/bin/sh', '-c' ]
+    command: |
+      "
+      echo -e 'Creating kafka topics'
+      kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists --topic user --replication-factor 1 --partitions 1
+      kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists --topic event --replication-factor 1 --partitions 1
+      kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists --topic coupon --replication-factor 1 --partitions 1
+      kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists --topic statistics --replication-factor 1 --partitions 1
+      
+      echo -e 'Successfully created the following topics:'
+      kafka-topics --bootstrap-server kafka:9092 --list
+      "
+
   kafka_consumer:
     image: python:latest
     restart: always
     depends_on:
       postgres:
         condition: service_healthy
-      kafka:
-        condition: service_healthy
+      init-kafka:
+        condition: service_completed_successfully
     networks:
       - app-network
     volumes:
@@ -63,8 +83,6 @@ services:
     image: python:latest
     restart: always
     depends_on:
-      kafka:
-        condition: service_healthy
       kafka_consumer:
         condition: service_started
     networks:
@@ -81,8 +99,6 @@ services:
     image: python:latest
     restart: always
     depends_on:
-      kafka:
-        condition: service_healthy
       kafka_consumer:
         condition: service_started
     networks:
@@ -99,8 +115,6 @@ services:
     image: python:latest
     restart: always
     depends_on:
-      kafka:
-        condition: service_healthy
       event_generator:
         condition: service_started
       kafka_consumer:
@@ -125,8 +139,6 @@ services:
     image: python:latest
     restart: always
     depends_on:
-      kafka:
-        condition: service_healthy
       event_generator:
         condition: service_started
       kafka_consumer:
