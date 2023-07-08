@@ -112,7 +112,7 @@ class Database:
         with self:
             self.cur.execute(query)
             result = self.cur.fetchone()
-            user_id = result[0]
+            user_id = result[0] if result else None
             return user_id
 
     def get_most_played_events(self, amount):
