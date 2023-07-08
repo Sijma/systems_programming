@@ -2,6 +2,11 @@ version: '3'
 services:
   postgres:
     image: postgres:latest
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     restart: always
     networks:
       - app-network
@@ -11,12 +16,17 @@ services:
       POSTGRES_DB: betting_recommendation_system
     volumes:
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql
-      - ./postgres_data:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
 
   kafka:
     image: bitnami/kafka:latest
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-topics.sh --list --bootstrap-server kafka:9092"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
     restart: always
     networks:
       - app-network
@@ -27,8 +37,10 @@ services:
     image: python:latest
     restart: always
     depends_on:
-      - postgres
-      - kafka
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
     networks:
       - app-network
     volumes:
@@ -51,8 +63,10 @@ services:
     image: python:latest
     restart: always
     depends_on:
-      - kafka
-      - kafka_consumer
+      kafka:
+        condition: service_healthy
+      kafka_consumer:
+        condition: service_started
     networks:
       - app-network
     volumes:
@@ -67,8 +81,10 @@ services:
     image: python:latest
     restart: always
     depends_on:
-      - kafka
-      - kafka_consumer
+      kafka:
+        condition: service_healthy
+      kafka_consumer:
+        condition: service_started
     networks:
       - app-network
     volumes:
@@ -83,9 +99,12 @@ services:
     image: python:latest
     restart: always
     depends_on:
-      - kafka
-      - event_generator
-      - kafka_consumer
+      kafka:
+        condition: service_healthy
+      event_generator:
+        condition: service_started
+      kafka_consumer:
+        condition: service_started
     networks:
       - app-network
     volumes:
@@ -106,9 +125,12 @@ services:
     image: python:latest
     restart: always
     depends_on:
-      - kafka
-      - event_generator
-      - kafka_consumer
+      kafka:
+        condition: service_healthy
+      event_generator:
+        condition: service_started
+      kafka_consumer:
+        condition: service_started
     networks:
       - app-network
     volumes:
@@ -132,7 +154,8 @@ services:
       stdin_open: true
       tty: true
       depends_on:
-        - postgres
+        postgres:
+          condition: service_healthy
       volumes:
         - .:/app
         - ./tests:/app/tests
@@ -150,7 +173,11 @@ services:
     volumes:
       - .:/app
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
+      tests:
+        condition: service_completed_successfully
+
     environment:
       POSTGRES_HOST: postgres
       POSTGRES_PORT: 5432
@@ -159,6 +186,9 @@ services:
       POSTGRES_DB: betting_recommendation_system
       KAFKA_HOST: kafka
       KAFKA_PORT: 9092
+
+volumes:
+  postgres_data:
 
 networks:
   app-network:
