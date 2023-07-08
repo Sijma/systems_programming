@@ -16,7 +16,7 @@ services:
       POSTGRES_DB: betting_recommendation_system
     volumes:
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql
-      - postgres_data:/var/lib/postgresql/data
+      - ./postgres_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
 
@@ -198,9 +198,6 @@ services:
       POSTGRES_DB: betting_recommendation_system
       KAFKA_HOST: kafka
       KAFKA_PORT: 9092
-
-volumes:
-  postgres_data:
 
 networks:
   app-network:
