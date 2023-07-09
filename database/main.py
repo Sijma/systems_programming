@@ -5,7 +5,6 @@ from pydantic import ValidationError, BaseModel
 app = FastAPI()
 db = Database()
 
-
 class InsertPayload(BaseModel):
     data_json: list
     data_type: str

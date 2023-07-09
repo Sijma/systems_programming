@@ -1,11 +1,9 @@
 import unittest
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 from datetime import datetime, timedelta
-import app
 import json
-from app import app as app_client
+from api.app import app as app_client
 from jsonschema import ValidationError
-import recommendations
 import schemas
 
 import sys

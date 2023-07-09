@@ -2,6 +2,7 @@ version: '3'
 services:
   postgres:
     image: postgres:latest
+    container_name: postgres_c
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready" ]
       interval: 5s
@@ -22,6 +23,7 @@ services:
 
   database:
     build: ./database
+    container_name: database_c
     restart: always
     healthcheck:
       test: ["CMD-SHELL", "wget --quiet --tries=1 --spider http://localhost:8000/ || exit 1"]
@@ -43,6 +45,7 @@ services:
 
   kafka:
     image: bitnami/kafka:latest
+    container_name: kafka_c
     healthcheck:
       test: ["CMD-SHELL", "kafka-topics.sh --list --bootstrap-server kafka:9092"]
       interval: 10s
@@ -56,6 +59,7 @@ services:
 
   init-kafka:
     image: confluentinc/cp-kafka:latest
+    container_name: init-kafka_c
     networks:
       - kafka-network
     depends_on:
@@ -76,6 +80,7 @@ services:
 
   kafka_consumer:
     image: python:latest
+    container_name: kafka_consumer_c
     restart: always
     depends_on:
       database:
@@ -99,6 +104,7 @@ services:
 
   user_generator:
     image: python:latest
+    container_name: user_generator_c
     restart: always
     depends_on:
       kafka_consumer:
@@ -115,6 +121,7 @@ services:
 
   event_generator:
     image: python:latest
+    container_name: event_generator_c
     restart: always
     depends_on:
       kafka_consumer:
@@ -131,6 +138,7 @@ services:
 
   coupon_generator:
     image: python:latest
+    container_name: coupon_generator_c
     restart: always
     depends_on:
       event_generator:
@@ -152,6 +160,7 @@ services:
 
   statistics_generator:
     image: python:latest
+    container_name: statistics_generator_c
     restart: always
     depends_on:
       event_generator:
@@ -172,31 +181,48 @@ services:
       KAFKA_PORT: 9092
 
 
-  tests:
-      build:
-        context: ./tests
-      stdin_open: true
-      tty: true
-      depends_on:
-        database:
-          condition: service_healthy
-      volumes:
-        - .:/app
-        - ./tests:/app/tests
+#  tests:
+#      build:
+#        context: ./tests
+#      container_name: tests_c
+#      stdin_open: true
+#      tty: true
+#      depends_on:
+#        database:
+#          condition: service_healthy
+#      volumes:
+#        - .:/app
+#        - ./tests:/app/tests
+
+  mailhog:
+    image: mailhog/mailhog
+    container_name: mailhog_c
+    ports:
+      - "8025:8025"  # Web interface to view emails
+      - "1025:1025"  # SMTP server for sending emails
+    # TODO: Add healthcheck
 
   app:
-    build: .
+    build:
+      context: .
+      dockerfile: ./api/Dockerfile
+    container_name: app_c
     restart: always
     stop_signal: SIGINT
+    networks:
+      - app-network
+      - dal-network
     ports:
       - "5000:5000"
     volumes:
-      - .:/app
+      - ./api:/app
     depends_on:
       database:
         condition: service_healthy
-      tests:
-        condition: service_completed_successfully
+#      tests:
+#        condition: service_completed_successfully
+      mailhog:
+        condition: service_started
 
     environment:
       FASTAPI_HOST: database
@@ -204,7 +230,23 @@ services:
       KAFKA_HOST: kafka
       KAFKA_PORT: 9092
 
+  frontend:
+    build:
+      context: frontend
+    container_name: frontend_c
+    depends_on:
+      app:
+        condition: service_started
+    networks:
+      - app-network
+    ports:
+      - "80:80"
+    environment:
+      FLASK_HOST: app
+      FLASK_PORT: 5000
+
 networks:
+  app-network:
   db-network:
   dal-network:
   kafka-network:
