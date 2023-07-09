@@ -18,6 +18,24 @@ services:
     volumes:
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql
       - ./postgres_data:/var/lib/postgresql/data
+
+  postgres_authentication:
+    image: postgres:latest
+    container_name: postgres_authentication_c
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: always
+    networks:
+      - app-network
+    environment:
+      POSTGRES_USER: coupon_recommendation_system
+      POSTGRES_PASSWORD: Xq8@SHF0S1&sM7v3
+      POSTGRES_DB: betting_recommendation_system_authentication
+    volumes:
+      - ./postgres_authentication_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
 
@@ -199,7 +217,6 @@ services:
     container_name: mailhog_c
     ports:
       - "8025:8025"  # Web interface to view emails
-      - "1025:1025"  # SMTP server for sending emails
     # TODO: Add healthcheck
 
   app:
@@ -223,22 +240,26 @@ services:
 #        condition: service_completed_successfully
       mailhog:
         condition: service_started
-
+      postgres_authentication:
+        condition: service_healthy
     environment:
       FASTAPI_HOST: database
       FASTAPI_PORT: 8000
-      KAFKA_HOST: kafka
-      KAFKA_PORT: 9092
+      POSTGRES_HOST: postgres_authentication
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: coupon_recommendation_system
+      POSTGRES_PASSWORD: Xq8@SHF0S1&sM7v3
+      POSTGRES_DB: betting_recommendation_system_authentication
 
   frontend:
     build:
       context: frontend
     container_name: frontend_c
+    networks:
+      - app-network
     depends_on:
       app:
         condition: service_started
-    networks:
-      - app-network
     ports:
       - "80:80"
     environment:
