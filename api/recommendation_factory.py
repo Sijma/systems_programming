@@ -17,6 +17,10 @@ class Recommender(ABC):
         return cls._registry.get(name)
 
     @classmethod
+    def get_recommender_registry(cls):
+        return cls._registry
+
+    @classmethod
     def get_recommender_func(cls, name):
         return cls._registry.get(name).recommend
 

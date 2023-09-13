@@ -19,25 +19,25 @@ services:
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql
       - ./postgres_data:/var/lib/postgresql/data
 
-  postgres_authentication:
-    image: postgres:latest
-    container_name: postgres_authentication_c
-    healthcheck:
-      test: [ "CMD-SHELL", "pg_isready" ]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-    restart: always
-    networks:
-      - app-network
-    environment:
-      POSTGRES_USER: coupon_recommendation_system
-      POSTGRES_PASSWORD: Xq8@SHF0S1&sM7v3
-      POSTGRES_DB: betting_recommendation_system_authentication
-    volumes:
-      - ./postgres_authentication_data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
+#  postgres_authentication:
+#    image: postgres:latest
+#    container_name: postgres_authentication_c
+#    healthcheck:
+#      test: [ "CMD-SHELL", "pg_isready" ]
+#      interval: 5s
+#      timeout: 5s
+#      retries: 5
+#    restart: always
+#    networks:
+#      - app-network
+#    environment:
+#      POSTGRES_USER: coupon_recommendation_system
+#      POSTGRES_PASSWORD: Xq8@SHF0S1&sM7v3
+#      POSTGRES_DB: betting_recommendation_system_authentication
+#    volumes:
+#      - ./postgres_authentication_data:/var/lib/postgresql/data
+#    ports:
+#      - "5432:5432"
 
   database:
     build: ./database
@@ -242,22 +242,16 @@ services:
 #        condition: service_completed_successfully
       mailhog:
         condition: service_started
-      postgres_authentication:
-        condition: service_healthy
-      keycloak:
-        condition: service_started
+#      postgres_authentication:
+#        condition: service_healthy
     environment:
       FASTAPI_HOST: database
       FASTAPI_PORT: 8000
-      POSTGRES_HOST: postgres_authentication
-      POSTGRES_PORT: 5432
-      POSTGRES_USER: keycloak
-      POSTGRES_PASSWORD: keycloak
-      POSTGRES_DB: keycloak
 
   frontend:
     build:
       context: frontend
+      dockerfile: ./Dockerfile-development
     container_name: frontend_c
     networks:
       - app-network
@@ -265,7 +259,7 @@ services:
       app:
         condition: service_started
     ports:
-      - "80:80"
+      - "3000:3000"  # 3000 for dockerfile development, 80 for production
     environment:
       FLASK_HOST: app
       FLASK_PORT: 5000
