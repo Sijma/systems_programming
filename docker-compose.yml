@@ -19,25 +19,25 @@ services:
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql
       - ./postgres_data:/var/lib/postgresql/data
 
-#  postgres_authentication:
-#    image: postgres:latest
-#    container_name: postgres_authentication_c
-#    healthcheck:
-#      test: [ "CMD-SHELL", "pg_isready" ]
-#      interval: 5s
-#      timeout: 5s
-#      retries: 5
-#    restart: always
-#    networks:
-#      - app-network
-#    environment:
-#      POSTGRES_USER: coupon_recommendation_system
-#      POSTGRES_PASSWORD: Xq8@SHF0S1&sM7v3
-#      POSTGRES_DB: betting_recommendation_system_authentication
-#    volumes:
-#      - ./postgres_authentication_data:/var/lib/postgresql/data
-#    ports:
-#      - "5432:5432"
+  postgres_authentication:
+    image: postgres:latest
+    container_name: postgres_authentication_c
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: always
+    networks:
+      - app-network
+    environment:
+      POSTGRES_USER: coupon_recommendation_system
+      POSTGRES_PASSWORD: Xq8@SHF0S1&sM7v3
+      POSTGRES_DB: betting_recommendation_system_authentication
+    volumes:
+      - ./postgres_authentication_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
 
   database:
     build: ./database
@@ -221,72 +221,6 @@ services:
       - "8025:8025"  # Web interface to view emails
     # TODO: Add healthcheck
 
-  postgres_authentication2:
-    image: postgres:latest
-    container_name: postgres_authentication2_c
-    healthcheck:
-      test: [ "CMD-SHELL", "pg_isready" ]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-    restart: always
-    environment:
-      POSTGRES_USER: keycloak
-      POSTGRES_PASSWORD: keycloak
-      POSTGRES_DB: keycloak
-    volumes:
-      - ./postgres_authentication2_data:/var/lib/postgresql/data
-
-  keycloak:
-    image: jboss/keycloak
-    environment:
-      KEYCLOAK_USER: admin
-      KEYCLOAK_PASSWORD: admin
-    ports:
-      - "8080:8080"
-    depends_on:
-      - database
-
-#   keycloak:
-#     image: quay.io/keycloak/keycloak:21.0
-#     networks:
-#       - app-network
-#     volumes:
-#       - './assets/keycloak/realm-export.json:/opt/jboss/keycloak/imports/realm-export.json'
-#     environment:
-#       DB_VENDOR: POSTGRES
-#       DB_ADDR: postgres_authentication2
-#       DB_DATABASE: keycloak
-#       DB_SCHEMA: public
-#       KC_DB_USERNAME: coupon_recommendation_system
-#       KC_DB_PASSWORD: 9PSSM2pLUb9RKrftrXad9qfhF
-#       KEYCLOAK_USER: keycloakuser
-#       KEYCLOAK_PASSWORD: keycloakpassword
-#       KEYCLOAK_ADMIN: admin
-#       KEYCLOAK_ADMIN_PASSWORD: admin
-#       PROXY_ADDRESS_FORWARDING: 'true'
-#       KEYCLOAK_LOGLEVEL: DEBUG
-#     entrypoint:
-#       [
-#         "/opt/keycloak/bin/kc.sh",
-#         "start",
-#         "--optimized",
-#         "--http-enabled=true",
-#         "--hostname-strict-https=false",
-#         "--hostname-strict=false",
-#         "--proxy=edge"
-#       ]
-#     ports:
-#       - "8080:8080"
-# #    healthcheck:
-# #      test: 'curl --fail http://localhost:9990 || exit 1'
-# #      interval: 10s
-# #      timeout: 10s
-# #      retries: 10
-#     depends_on:
-#       postgres_authentication2:
-#         condition: service_healthy
-
   app:
     build:
       context: .
@@ -308,14 +242,14 @@ services:
 #        condition: service_completed_successfully
       mailhog:
         condition: service_started
-      postgres_authentication2:
+      postgres_authentication:
         condition: service_healthy
       keycloak:
         condition: service_started
     environment:
       FASTAPI_HOST: database
       FASTAPI_PORT: 8000
-      POSTGRES_HOST: postgres_authentication2
+      POSTGRES_HOST: postgres_authentication
       POSTGRES_PORT: 5432
       POSTGRES_USER: keycloak
       POSTGRES_PASSWORD: keycloak
