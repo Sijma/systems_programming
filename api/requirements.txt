@@ -7,3 +7,5 @@ Flask-SQLAlchemy~=3.0.5
 Flask-Mail~=0.9.1
 Flask-Bcrypt~=1.0.1
 psycopg2-binary~=2.9.6
+flask-oidc~=1.4.0
+python-keycloak~=3.3.0

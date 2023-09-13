@@ -1,5 +1,6 @@
 import os
 import psycopg2
+from psycopg2 import pool
 
 TYPE_USER = "user"
 TYPE_EVENT = "event"

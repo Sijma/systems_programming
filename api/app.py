@@ -1,16 +1,17 @@
 from flask import request, jsonify
-from flask_jwt_extended import jwt_required, get_jwt_identity
+# from flask_jwt_extended import jwt_required, get_jwt_identity
 from recommendations import get_recommendation_coupon, recommendation_registry
 from flask_init import app
 from user_management import get_user_by_id, register_user, confirm_email, login_user
 import schemas
 
 @app.route('/api/', methods=["GET"])
-@jwt_required()
+# @jwt_required()
 def home():
-    user_id = get_jwt_identity()
-    user = get_user_by_id(user_id)
-    return f"hello {user.username}!"
+    # user_id = get_jwt_identity()
+    # user = get_user_by_id(user_id)
+    # return f"hello {user.username}!"
+    return "hello world!"
 
 # Route for user registration
 @app.route('/api/register', methods=["POST"])
@@ -48,7 +49,7 @@ def confirm(token):
         return jsonify({"status": "error", "message": "Invalid confirmation token"}), 400
 
 @app.route('/api/recommend', methods=["POST"])
-@jwt_required()
+# @jwt_required()
 @schemas.json_validator(schemas.recommendation_request_schema)
 def get_recommendation():
     response = get_recommendation_coupon(recommendation_registry, request.json["generator"], request.json["user_id"], request.json["amount"])
