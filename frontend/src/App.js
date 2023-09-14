@@ -1,21 +1,19 @@
-import React, { useEffect, useState } from 'react';
-import $ from 'jquery';
+import React, { useEffect, useState } from "react";
+import $ from "jquery";
 
 function App() {
-  const [message, setMessage] = useState('');
+  const [data, setData] = useState("");
 
   useEffect(() => {
-    // Fetch data from Flask API on component mount
-    $.get('/api/', (data) => {
-      setMessage(data);
+    $.get(`http://localhost:5000/api/list-recommenders`, (response) => {
+      setData(response);
     });
   }, []);
 
   return (
     <div className="App">
-      <h1>Hello from React!</h1>
-      <p>Message from Flask API:</p>
-      <p>{message}</p>
+      <h1>Hello React App</h1>
+      <p>Data from Flask API: {data}</p>
     </div>
   );
 }

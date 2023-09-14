@@ -1,6 +1,7 @@
 from flask import request, jsonify
 from recommendations import get_recommendation_coupon, get_available_recommenders
 from flask_init import app
+from flask_cors import CORS
 import schemas
 
 

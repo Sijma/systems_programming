@@ -235,6 +235,7 @@ services:
       - "5000:5000"
     volumes:
       - ./api:/app
+      - ./schemas.py:/app/schemas.py
     depends_on:
       database:
         condition: service_healthy
@@ -250,7 +251,7 @@ services:
 
   frontend:
     build:
-      context: frontend
+      context: ./frontend
       dockerfile: ./Dockerfile-development
     container_name: frontend_c
     networks:
@@ -260,6 +261,11 @@ services:
         condition: service_started
     ports:
       - "3000:3000"  # 3000 for dockerfile development, 80 for production
+    volumes:
+      - ./frontend:/app
+      - ./app/node_modules
+    stdin_open: true # Development only
+    tty: true # Development only
     environment:
       FLASK_HOST: app
       FLASK_PORT: 5000

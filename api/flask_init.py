@@ -34,5 +34,5 @@ app.config['MAIL_USERNAME'] = 'recommendation_system@mailhog.com'
 app.config['MAIL_PASSWORD'] = 'recommendation_system_password'
 mail = Mail(app)
 
-#CORS
-CORS(app, resources={r"/*": {"origins": "http://127.0.0.1"}})
+# CORS
+CORS(app, resources={r"/api/*": {"origins": "http://localhost:3000"}})
