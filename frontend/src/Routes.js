@@ -1,23 +1,21 @@
 import React from "react";
-import { BrowserRouter as Router, Route, Switch, Redirect } from "react-router-dom";
-import Home from "./components/Home";
-import Login from "./components/Login";
-import Register from "./components/Register";
-import Dashboard from "./components/Dashboard";
-import PrivateRoute from "./components/PrivateRoute";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import Login from "./Login";
+import Register from "./Register";
+import Dashboard from "./Dashboard";
+import PrivateRoute from "./PrivateRoute";
 
-const Routes = () => {
+const My_Routes = () => {
   return (
-    <Router>
-      <Switch>
-        <Route exact path="/" component={Home} />
-        <Route exact path="/login" component={Login} />
-        <Route exact path="/register" component={Register} />
-        <PrivateRoute exact path="/dashboard" component={Dashboard} />
-        <Redirect to="/" />
-      </Switch>
-    </Router>
+    <div className="app">
+        <Routes>
+            <Route exact path="/login" element={<Login/>} />
+            <Route exact path="/register" element={<Register/>} />
+            <Route exact path="/dashboard" element={<Dashboard/>} />
+            {/*<Navigate to="/" />*/}
+        </Routes>
+    </div>
   );
 };
 
-export default Routes;
+export default My_Routes;

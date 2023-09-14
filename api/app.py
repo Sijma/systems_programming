@@ -1,9 +1,6 @@
-from flask import request, jsonify
-from recommendations import get_recommendation_coupon, get_available_recommenders
-from flask_init import app
-from flask_cors import CORS
-import schemas
+from backend import create_app
 
+app = create_app()
 
 # # Route for user registration
 # @app.route('/api/register', methods=["POST"])
@@ -41,24 +38,6 @@ import schemas
 #     else:
 #         return jsonify({"status": "error", "message": "Invalid confirmation token"}), 400
 
-@app.route('/api/', methods=["GET"])
-def home():
-    # user = get_user_by_id(user_id)
-    # return f"hello {user.username}!"
-    return "hello world!"
-
-
-@app.route('/api/list-recommenders', methods=["GET"])
-def get_recommenders():
-    return get_available_recommenders()
-
-
-@app.route('/api/recommend', methods=["POST"])
-@schemas.json_validator(schemas.recommendation_request_schema)
-def get_recommendation():
-    response = get_recommendation_coupon(request.json["generator"], request.json["user_id"], request.json["amount"])
-    return response
-
 
 if __name__ == '__main__':
-    app.run(host="0.0.0.0")
+    app.run(debug=True, host="0.0.0.0")  # TODO: Remove debug for production

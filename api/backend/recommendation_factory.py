@@ -28,10 +28,3 @@ class Recommender(ABC):
     @abstractmethod
     def recommend(cls, user_id, recommendation_amount):
         pass
-
-
-# def register_recommender(name):
-#     def decorator(subclass):
-#         Recommender.register(name, subclass)
-#         return subclass
-#     return decorator

@@ -1,5 +1,5 @@
-# import requests
-from recommendation_factory import Recommender
+import requests
+from .recommendation_factory import Recommender
 
 
 class DummyGenerator(Recommender, cl_name="dummy"):
@@ -45,8 +45,10 @@ class PopularGenerator(Recommender, cl_name="popular"):
             selections.append({"event_id": event_id, "outcome": outcome, "coupon_count": coupon_count})
         return {"selections": selections}
 
+
 def get_available_recommenders():
     return list(Recommender.get_recommender_registry().keys())
+
 
 def get_recommendation_coupon(generator_type, user_id, recommendation_amount):
     return Recommender.get_recommender(generator_type).recommend(user_id, recommendation_amount)

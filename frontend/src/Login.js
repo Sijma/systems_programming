@@ -1,37 +1,66 @@
 // src/components/Login.js
+
 import React, { useState } from "react";
-import axios from "axios";
+import { loginUser } from "./api"; // Import the API functions
+import $ from "jquery";
 
-const Login = () => {
-  const [credentials, setCredentials] = useState({ email: "", password: "" });
+function Login() {
+  const [token, setToken] = useState(""); // State to store the token
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setCredentials({ ...credentials, [name]: value });
-  };
-
-  const handleSubmit = async (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
 
+    const email = $('#email').val();
+    const password = $('#password').val();
+
     try {
-      const response = await axios.post("/api/login", credentials); // Replace with your API endpoint
-      // Handle successful login (e.g., store the token in localStorage)
+      const response = await loginUser(email, password);
+      const { access_token } = response;
+
+      localStorage.setItem('token', access_token);
+
+      setToken(access_token);
+
+      console.log('Login successful:', response);
+      // TODO: Handle successful login
     } catch (error) {
-      // Handle login failure
-      console.error("Login failed:", error);
+      console.error('Login failed:', error.responseJSON);
+      // TODO: Handle login failure
     }
   };
 
   return (
-    <div>
+    <div className="login-container">
       <h2>Login</h2>
-      <form onSubmit={handleSubmit}>
-        <input type="email" name="email" placeholder="Email" value={credentials.email} onChange={handleChange} />
-        <input type="password" name="password" placeholder="Password" value={credentials.password} onChange={handleChange} />
+      <form onSubmit={handleLogin}>
+        <div className="form-group">
+          <label htmlFor="email">Email:</label>
+          <input
+            type="email"
+            id="email"
+            name="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
+        </div>
+        <div className="form-group">
+          <label htmlFor="password">Password:</label>
+          <input
+            type="password"
+            id="password"
+            name="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
+        </div>
         <button type="submit">Login</button>
       </form>
     </div>
   );
-};
+}
 
 export default Login;

@@ -19,25 +19,23 @@ services:
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql
       - ./postgres_data:/var/lib/postgresql/data
 
-#  postgres_authentication:
-#    image: postgres:latest
-#    container_name: postgres_authentication_c
-#    healthcheck:
-#      test: [ "CMD-SHELL", "pg_isready" ]
-#      interval: 5s
-#      timeout: 5s
-#      retries: 5
-#    restart: always
-#    networks:
-#      - app-network
-#    environment:
-#      POSTGRES_USER: coupon_recommendation_system
-#      POSTGRES_PASSWORD: Xq8@SHF0S1&sM7v3
-#      POSTGRES_DB: betting_recommendation_system_authentication
-#    volumes:
-#      - ./postgres_authentication_data:/var/lib/postgresql/data
-#    ports:
-#      - "5432:5432"
+  postgres_authentication:
+    image: postgres:latest
+    container_name: postgres_authentication_c
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: always
+    networks:
+      - app-network
+    environment:
+      POSTGRES_USER: coupon_recommendation_system
+      POSTGRES_PASSWORD: Xq8&SHF0S1&sM7v3 # TODO: CHANGE ALL PASSWORDS
+      POSTGRES_DB: betting_recommendation_system_authentication
+    volumes:
+      - ./postgres_authentication_data:/var/lib/postgresql/data
 
   database:
     build: ./database
@@ -243,11 +241,17 @@ services:
 #        condition: service_completed_successfully
       mailhog:
         condition: service_started
-#      postgres_authentication:
-#        condition: service_healthy
+      postgres_authentication:
+        condition: service_healthy
     environment:
       FASTAPI_HOST: database
       FASTAPI_PORT: 8000
+      AUTH_HOST: postgres_authentication
+      AUTH_PORT: 5432
+      AUTH_USER: coupon_recommendation_system
+      AUTH_PASSWORD: Xq8&SHF0S1&sM7v3 # TODO: CHANGE ALL PASSWORDS
+      AUTH_DB: betting_recommendation_system_authentication
+
 
   frontend:
     build:
