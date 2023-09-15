@@ -3,7 +3,8 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-d
 import Login from "./Login";
 import Register from "./Register";
 import Dashboard from "./Dashboard";
-import PrivateRoute from "./PrivateRoute";
+import ProtectedRoutes from "./ProtectedRoutes";
+import NotFound from './NotFound';
 
 const My_Routes = () => {
   return (
@@ -11,8 +12,10 @@ const My_Routes = () => {
         <Routes>
             <Route exact path="/login" element={<Login/>} />
             <Route exact path="/register" element={<Register/>} />
-            <Route exact path="/dashboard" element={<Dashboard/>} />
-            {/*<Navigate to="/" />*/}
+            <Route element={<ProtectedRoutes/>}>
+                <Route path="/dashboard" element={<Dashboard/>} />
+            </Route>
+            <Route path='*' element={<NotFound/>} /> {/* This route matches any unknown route */}
         </Routes>
     </div>
   );

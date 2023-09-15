@@ -21,6 +21,9 @@ def login():
     if not user or not user.check_password(password):
         return jsonify({'message': 'Invalid login credentials'}), 401
 
+    if not user.email_verified:
+        return jsonify({'message': 'Email is not verified. Please check your email for verification instructions.'}), 401
+
     # Generate a JWT token upon successful login
     access_token = create_access_token(identity=user.id)
 
@@ -28,6 +31,7 @@ def login():
 
 
 @auth.route('/logout', methods=["POST"])
+@jwt_required()
 def logout():
     return 'logout'  # TODO: LOOKUP JWT LOGOUT PRACTICES. MAYBE JUST REMOVE THE TOKEN CLIENT-SIDE
 

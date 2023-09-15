@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { registerUser } from "./api"; // Import the registerUser function
+import {Link} from "react-router-dom";
 
 function Register() {
   const [email, setEmail] = useState(""); // State for email input
@@ -50,6 +51,9 @@ function Register() {
         </div>
         <button type="submit">Register</button>
       </form>
+      <Link to="/login" className="swap-button">
+        Login
+      </Link>
     </div>
   );
 }
