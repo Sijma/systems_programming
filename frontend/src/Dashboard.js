@@ -37,7 +37,7 @@ function Dashboard() {
                   className="btn btn-success mb-3"
                   onClick={handleSubscribe}
                 >
-                  Subscribe to Recommendations
+                  Manage Subscriptions
                 </button>
                 <br />
                 <button
