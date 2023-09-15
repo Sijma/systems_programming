@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 import json
 from api.app import app as app_client
 from jsonschema import ValidationError
-import schemas
+from api.backend import schemas
 
 import sys
 sys.path.append('./kafka_code')

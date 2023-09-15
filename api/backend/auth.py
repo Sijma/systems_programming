@@ -2,7 +2,7 @@ from flask import Blueprint, request, jsonify
 from flask_mail import Message
 from . import db, mail, MAIL_USERNAME
 from .models import User
-from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
+from flask_jwt_extended import create_access_token, create_refresh_token, jwt_required, get_jwt_identity
 
 auth = Blueprint('auth', __name__)
 
@@ -26,14 +26,15 @@ def login():
 
     # Generate a JWT token upon successful login
     access_token = create_access_token(identity=user.id)
+    refresh_token = create_refresh_token(identity=user.id)
 
-    return jsonify({'message': 'Login successful', 'access_token': access_token})
+    return jsonify({'message': 'Login successful', 'access_token': access_token, 'refresh_token': refresh_token}), 200
 
 
-@auth.route('/logout', methods=["POST"])
-@jwt_required()
-def logout():
-    return 'logout'  # TODO: LOOKUP JWT LOGOUT PRACTICES. MAYBE JUST REMOVE THE TOKEN CLIENT-SIDE
+# @auth.route('/logout', methods=["POST"])
+# @jwt_required()
+# def logout():
+#     return 'logout'  # TODO: LOOKUP JWT LOGOUT PRACTICES TO INVALIDATE. MAYBE JUST REMOVE THE TOKEN CLIENT-SIDE
 
 
 @auth.route('/register', methods=["POST"])
@@ -61,6 +62,20 @@ def register():
     mail.send(msg)
 
     return jsonify({'message': 'Registration successful. Please check your email for verification.'})
+
+
+@auth.route('/check-token', methods=['GET'])
+@jwt_required()
+def check_token():
+    return jsonify({"message": "Token is valid"}), 200
+
+
+@auth.route('/refresh-token', methods=['POST'])
+@jwt_required(refresh=True)  # Requires a valid refresh token
+def refresh():
+    identity = get_jwt_identity()
+    access_token = create_access_token(identity=identity)
+    return jsonify(access_token=access_token)
 
 
 @auth.route('/verify_email/<verification_token>', methods=["GET"])

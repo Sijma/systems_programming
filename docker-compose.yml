@@ -11,6 +11,8 @@ services:
     restart: always
     networks:
       - db-network
+    ports:
+      - "5432:5432"
     environment:
       POSTGRES_USER: coupon_recommendation_system
       POSTGRES_PASSWORD: Xq8@SHF0S1&sM7v3
@@ -37,7 +39,7 @@ services:
     volumes:
       - ./postgres_authentication_data:/var/lib/postgresql/data
 
-  database:
+  data_access_layer:
     build: ./database
     container_name: database_c
     restart: always
@@ -99,7 +101,7 @@ services:
     container_name: kafka_consumer_c
     restart: always
     depends_on:
-      database:
+      data_access_layer:
         condition: service_healthy
       init-kafka:
         condition: service_completed_successfully
@@ -112,7 +114,7 @@ services:
       - ./schemas.py:/schemas.py
     command: sh -c "pip install -r requirements.txt && python -u kafka_consumer.py"
     environment:
-      FASTAPI_HOST: database
+      FASTAPI_HOST: data_access_layer
       FASTAPI_PORT: 8000
       KAFKA_HOST: kafka
       KAFKA_PORT: 9092
@@ -169,7 +171,7 @@ services:
       - ./kafka_code/coupon_generator.py:/coupon_generator.py
     command: sh -c "pip install -r requirements.txt && python -u coupon_generator.py"
     environment:
-      FASTAPI_HOST: database
+      FASTAPI_HOST: data_access_layer
       FASTAPI_PORT: 8000
       KAFKA_HOST: kafka
       KAFKA_PORT: 9092
@@ -191,7 +193,7 @@ services:
       - ./kafka_code/statistics_generator.py:/statistics_generator.py
     command: sh -c "pip install -r requirements.txt && python -u statistics_generator.py"
     environment:
-      FASTAPI_HOST: database
+      FASTAPI_HOST: data_access_layer
       FASTAPI_PORT: 8000
       KAFKA_HOST: kafka
       KAFKA_PORT: 9092
@@ -220,9 +222,7 @@ services:
     # TODO: Add healthcheck
 
   app:
-    build:
-      context: .
-      dockerfile: ./api/Dockerfile
+    build: ./api
     container_name: app_c
     restart: always
     stop_signal: SIGINT
@@ -233,9 +233,8 @@ services:
       - "5000:5000"
     volumes:
       - ./api:/app
-      - ./schemas.py:/app/schemas.py
     depends_on:
-      database:
+      data_access_layer:
         condition: service_healthy
 #      tests:
 #        condition: service_completed_successfully
@@ -244,7 +243,7 @@ services:
       postgres_authentication:
         condition: service_healthy
     environment:
-      FASTAPI_HOST: database
+      FASTAPI_HOST: data_access_layer
       FASTAPI_PORT: 8000
       AUTH_HOST: postgres_authentication
       AUTH_PORT: 5432
@@ -258,6 +257,7 @@ services:
       context: ./frontend
       dockerfile: ./Dockerfile-development
     container_name: frontend_c
+    restart: always
     networks:
       - app-network
     depends_on:

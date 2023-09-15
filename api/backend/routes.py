@@ -1,13 +1,12 @@
 from flask import Blueprint, request
 from .recommendations import get_recommendation_coupon, get_available_recommenders
 from flask_jwt_extended import jwt_required
-import schemas
+from . import schemas
 
 routes = Blueprint('routes', __name__)
 
 
 @routes.route('/', methods=["GET"])
-@jwt_required()
 def home():
     return "hello world!"
 

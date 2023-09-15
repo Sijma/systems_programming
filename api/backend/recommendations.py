@@ -1,6 +1,6 @@
 import requests
 from .recommendation_factory import Recommender
-
+import os
 
 class DummyGenerator(Recommender, cl_name="dummy"):
     @classmethod
@@ -33,10 +33,10 @@ class DummyGenerator(Recommender, cl_name="dummy"):
 class PopularGenerator(Recommender, cl_name="popular"):
     @classmethod
     def recommend(cls, user_id, recommendation_amount):
-        url = f"http://localhost:8000/most_played_events/{recommendation_amount}"
-        response = requests.get(url)
+        response = requests.get(f"http://{os.environ.get('FASTAPI_HOST')}:{os.environ.get('FASTAPI_PORT')}/most_played_events/{recommendation_amount}")
         if response.status_code != 200:
-            events =  None
+            print(response.text)
+            events = None
         else:
             events = response.json()['events']
         selections = []

@@ -23,7 +23,8 @@ def create_app():
 
     # JWT
     app.config['JWT_SECRET_KEY'] = 'dksjfpiaskdaijsfoiaspodkaopsdkahd'  # TODO: CHANGE
-    app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(minutes=15)
+    app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(hours=1)
+    app.config['JWT_REFRESH_TOKEN_EXPIRES'] = timedelta(days=30)
     jwt.init_app(app)
 
     # DATABASE

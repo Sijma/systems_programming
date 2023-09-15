@@ -3,14 +3,19 @@
 import React, {useState} from "react";
 import {loginUser} from "./api"; // Import the API functions
 import {Link} from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import $ from "jquery";
-import "./css/App.css"; // Import the CSS file
 
 function Login() {
+  const navigate = useNavigate();
   const [token, setToken] = useState(""); // State to store the token
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState(""); // State for the error message
+
+  const navigateDashboard = () => {
+    navigate('/dashboard');
+  };
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -20,56 +25,75 @@ function Login() {
 
     try {
       const response = await loginUser(email, password);
-      const { access_token } = response;
+      const { access_token, refresh_token } = response;
 
-      localStorage.setItem('token', access_token);
+      // Store both access_token and refresh_token in localStorage
+      localStorage.setItem('access_token', access_token);
+      localStorage.setItem('refresh_token', refresh_token);
 
       setToken(access_token);
 
       console.log('Login successful:', response);
-      // TODO: Handle successful login
+      navigateDashboard();
     } catch (error) {
       //console.error('Login failed:', error.responseJSON);
       setError(error.responseJSON.message);
-      // TODO: Handle login failure
     }
   };
 
   return (
-      <div className="form-background">
-        <div className="login-container">
-          <h2>Login</h2>
-          {error && <p className="error-message">{error}</p>} {/* Display error message if there's an error */}
-          <form onSubmit={handleLogin}>
-            <div className="form-group">
-              <label htmlFor="email">Email:</label>
-              <input
-                  type="email"
-                  id="email"
-                  name="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-              />
+    <div className="container">
+      <div className="row justify-content-center">
+        <div className="col-md-6">
+          <div className="card mt-5">
+            <div className="card-body">
+              <h2 className="card-title text-center">Login</h2>
+              {error && <p className="alert alert-danger">{error}</p>} {/* Display error message if there's an error */}
+              <form onSubmit={handleLogin}>
+                <div className="mb-3">
+                  <label htmlFor="email" className="form-label">
+                    Email:
+                  </label>
+                  <input
+                    type="email"
+                    id="email"
+                    name="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="form-control"
+                    required
+                  />
+                </div>
+                <div className="mb-3">
+                  <label htmlFor="password" className="form-label">
+                    Password:
+                  </label>
+                  <input
+                    type="password"
+                    id="password"
+                    name="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="form-control"
+                    required
+                  />
+                </div>
+                <div className="text-center">
+                  <button type="submit" className="btn btn-primary">
+                    Login
+                  </button>
+                </div>
+              </form>
+              <p className="mt-3 text-center">
+                Don't have an account?{" "}
+                <Link to="/register">Register</Link>
+              </p>
             </div>
-            <div className="form-group">
-              <label htmlFor="password">Password:</label>
-              <input
-                  type="password"
-                  id="password"
-                  name="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-              />
-            </div>
-            <button type="submit">Login</button>
-          </form>
-          <Link to="/register" className="swap-button">
-            Register
-          </Link>
+          </div>
         </div>
       </div>
+    </div>
   );
 }
+
 export default Login;

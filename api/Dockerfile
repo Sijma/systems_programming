@@ -5,11 +5,11 @@ RUN pip install --upgrade setuptools
 
 WORKDIR /app
 
-COPY ./api/requirements.txt .
+COPY ./requirements.txt .
 
 RUN pip install --no-cache-dir -r requirements.txt
 
-#COPY ./api .
+COPY . .
 
 EXPOSE 5000
 

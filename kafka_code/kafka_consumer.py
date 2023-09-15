@@ -2,7 +2,6 @@ import signal
 import os
 from confluent_kafka import Consumer
 import json
-from schemas import TYPE_USER, TYPE_EVENT, TYPE_COUPON, TYPE_STATISTICS
 from multiprocessing import Process
 import sys
 import requests
@@ -14,6 +13,11 @@ conf = {
     'group.id': 'consumer_group',
     'enable.auto.commit': False
 }
+
+TYPE_USER = "user"
+TYPE_EVENT = "event"
+TYPE_COUPON = "coupon"
+TYPE_STATISTICS = "statistics"
 
 topics = [TYPE_USER, TYPE_EVENT, TYPE_COUPON, TYPE_STATISTICS]
 
@@ -46,8 +50,9 @@ def process_messages(topic):
 
         if not msg.error():
             value = json.loads(msg.value().decode('utf-8'))
-            if topic == TYPE_COUPON: # TODO: Look for a more elegant fix
+            if topic == TYPE_COUPON:  # TODO: Look for a more elegant fix
                 value["selections"] = json.dumps(value["selections"])
+                print(value["selections"])
             buffer.append(value)
 
             if len(buffer) >= buffer_size:
