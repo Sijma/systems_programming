@@ -1,11 +1,11 @@
 import signal
 import os
 from confluent_kafka import Consumer
-from database import Database
 import json
-from schemas import TYPE_USER, TYPE_EVENT, TYPE_COUPON, TYPE_STATISTICS
 from multiprocessing import Process
 import sys
+import requests
+from time import sleep
 
 conf = {
     'bootstrap.servers': f"{os.environ.get('KAFKA_HOST')}:{os.environ.get('KAFKA_PORT')}",
@@ -14,17 +14,35 @@ conf = {
     'enable.auto.commit': False
 }
 
+TYPE_USER = "user"
+TYPE_EVENT = "event"
+TYPE_COUPON = "coupon"
+TYPE_STATISTICS = "statistics"
+
 topics = [TYPE_USER, TYPE_EVENT, TYPE_COUPON, TYPE_STATISTICS]
 
 print("connected")
 
 buffer_size = 100
 
+def insert(data, topic, batch=False):
+    payload = {
+        "data_json": data,
+        "data_type": topic,
+        "batch": True
+    }
+
+    #payload_json = json.dumps(payload)
+
+    response = requests.post(f"http://{os.environ.get('FASTAPI_HOST')}:{os.environ.get('FASTAPI_PORT')}/insert", json = payload)
+    if response.status_code != 200:
+        print(response.content)
+        sleep(100)
+    return response.status_code == 200
+
 def process_messages(topic):
     consumer = Consumer(conf)
     consumer.subscribe([topic])
-
-    db = Database()
 
     buffer = []
     while True:
@@ -32,14 +50,15 @@ def process_messages(topic):
 
         if not msg.error():
             value = json.loads(msg.value().decode('utf-8'))
-            if topic == TYPE_COUPON: # TODO: Look for a more elegant fix
+            if topic == TYPE_COUPON:  # TODO: Look for a more elegant fix
                 value["selections"] = json.dumps(value["selections"])
+                print(value["selections"])
             buffer.append(value)
 
             if len(buffer) >= buffer_size:
-                db.insert(buffer, topic, True)
-
-                buffer = []
+                res = insert(buffer, topic, True)
+                if res is True:
+                    buffer = []
             consumer.commit(msg)
 
         else:

@@ -43,8 +43,8 @@ class Database:
         if cls._instance is None:
             cls._instance = super().__new__(cls)
             cls._instance.connection_pool = psycopg2.pool.SimpleConnectionPool(
-                minconn=5,  # min = number of connections initially created
-                maxconn=10,
+                minconn=25,  # min = number of connections initially created
+                maxconn=50,
                 host=os.environ.get('POSTGRES_HOST'),
                 port=os.environ.get('POSTGRES_PORT'),
                 dbname=os.environ.get('POSTGRES_DB'),
@@ -53,26 +53,27 @@ class Database:
             )
         return cls._instance
 
-    def __enter__(self):
-        self.conn = self.connection_pool.getconn()
-        self.cur = self.conn.cursor()
-        return self.cur
+    class DatabaseConnectionManager:
+        def __enter__(self):
+            self.conn = Database._instance.connection_pool.getconn()
+            self.cur = self.conn.cursor()
+            return self.cur
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        if exc_type is None:
-            self.conn.commit()
-        else:
-            self.conn.rollback()
-        self.cur.close()
-        self.connection_pool.putconn(self.conn)
+        def __exit__(self, exc_type, exc_val, exc_tb):
+            if exc_type is None:
+                self.conn.commit()
+            else:
+                self.conn.rollback()
+            self.cur.close()
+            Database._instance.connection_pool.putconn(self.conn)
 
     def insert(self, data_json, data_type, batch=False):
-        with self:
+        with self.DatabaseConnectionManager() as cur:
             query, data = construct_query(data_json, data_type, batch)
             if batch:
-                self.cur.executemany(query, data) # TODO: Consider using fast_executemany. Apparently executemany is just a loop of execute which is bad for performance
+                cur.executemany(query, data) # TODO: Consider using fast_executemany. Apparently executemany is just a loop of execute which is bad for performance
             else:
-                self.cur.execute(query, data)
+                cur.execute(query, data)
 
     def get_random_event_id_for_statistics(self):
         query = """
@@ -86,9 +87,10 @@ class Database:
                 ORDER BY random()
                 LIMIT 1
             """
-        with self:
-            self.cur.execute(query)
-            result = self.cur.fetchone()
+        with self.DatabaseConnectionManager() as cur:
+            cur.execute(query)
+
+            result = cur.fetchone()
 
             # If an eligible event_id is found, return it; otherwise, return None
             event_id = result[0] if result else None
@@ -102,17 +104,17 @@ class Database:
             ORDER BY random()
             LIMIT 1
         """
-        with self:
-            self.cur.execute(query, (coupon_timestamp,))
-            result = self.cur.fetchone()
+        with self.DatabaseConnectionManager() as cur:
+            cur.execute(query, (coupon_timestamp,))
+            result = cur.fetchone()
             event_id = result[0] if result else None
             return event_id
     def get_random_user_id(self):
         query = "SELECT user_id FROM users ORDER BY random() LIMIT 1"
-        with self:
-            self.cur.execute(query)
-            result = self.cur.fetchone()
-            user_id = result[0]
+        with self.DatabaseConnectionManager() as cur:
+            cur.execute(query)
+            result = cur.fetchone()
+            user_id = result[0] if result else None
             return user_id
 
     def get_most_played_events(self, amount):
@@ -127,6 +129,6 @@ class Database:
             ORDER BY appearances DESC
             LIMIT %s;
         """
-        with self:
-            self.cur.execute(query, (amount,))
-            return self.cur.fetchall()
+        with self.DatabaseConnectionManager() as cur:
+            cur.execute(query, (amount,))
+            return cur.fetchall()
