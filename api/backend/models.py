@@ -28,3 +28,11 @@ class User(db.Model):
         self.email_verification_token = None  # Clear the verification token
         db.session.commit()
         return
+
+
+class Subscriber(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    email = db.Column(db.String(120), unique=True, nullable=False)
+    recommender = db.Column(db.String(255), nullable=False)
+    frequency = db.Column(db.String(50), nullable=False)
+    num_recommendations = db.Column(db.Integer, nullable=False)

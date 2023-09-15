@@ -6,7 +6,6 @@ class DummyGenerator(Recommender, cl_name="dummy"):
     @classmethod
     def recommend(cls, user_id, recommendation_amount):
         return {
-            "coupon_id": "8bcc0f90-96e9-4f87-aeab-22aff8c278ae",
             "selections": [
                 {
                     "event_id": "7099151a-33aa-423f-9915-225c07c1daca",

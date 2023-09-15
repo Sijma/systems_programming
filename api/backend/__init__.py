@@ -61,23 +61,3 @@ def create_app():
 def create_database(app):
     with app.app_context():
         db.create_all()
-
-# DATABASE
-# encoded_password = urllib.parse.quote_plus(environ['AUTH_PASSWORD'])
-# app.config['SQLALCHEMY_DATABASE_URI'] = f"postgresql://{environ['AUTH_USER']}:{encoded_password}@{environ['AUTH_HOST']}:{environ['AUTH_PORT']}/{environ['AUTH_DB']}"
-# app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-
-# db = SQLAlchemy(app)
-
-# class User(db.Model):
-#     id = db.Column(db.Integer, primary_key=True)
-#     username = db.Column(db.String(50), unique=True, nullable=False)
-#     password = db.Column(db.String(100), nullable=False)
-#     salt = db.Column(db.String(32), nullable=False)
-#     email = db.Column(db.String(100), unique=True, nullable=False)
-#     confirmed = db.Column(db.Boolean, default=False)
-#     confirmation_token = db.Column(db.String(32), unique=True)
-
-# Initialize the database tables
-# with app.app_context():
-#     db.create_all()
