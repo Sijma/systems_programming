@@ -14,7 +14,7 @@ COPY . .
 # Setup Cron
 RUN apt-get update && apt-get -y install cron
 RUN chmod +x ./recommendation_scheduler.py
-RUN echo "5 0 * * * python3 /app/recommendation_scheduler.py" >> /etc/crontab
+RUN echo "5 0 * * * /usr/local/bin/python3 /app/recommendation_scheduler.py" >> /etc/crontab
 CMD cron -f
 
 EXPOSE 5000
