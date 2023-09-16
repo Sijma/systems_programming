@@ -1,5 +1,3 @@
-// api.js
-
 import $ from "jquery";
 import { API_URL } from "./config";
 
@@ -8,7 +6,17 @@ export function registerUser(email, password) {
     type: 'POST',
     url: `${API_URL}/auth/register`,
     data: JSON.stringify({ email, password }),
-    contentType: 'application/json'
+    contentType: 'application/json',
+    headers: {
+      'from-frontend' : true
+    }
+  });
+}
+
+export function verifyEmail(verificationToken) {
+  return $.ajax({
+    type: 'GET',
+    url: `${API_URL}/auth/verify_email/${verificationToken}`,
   });
 }
 
@@ -31,13 +39,12 @@ export function getRecommenders() {
   });
 }
 
-export function getRecommendation(generator, userId, amount) {
+export function getRecommendation(generator, amount) {
   return $.ajax({
     type: 'POST',
     url: `${API_URL}/recommend`,
     data: JSON.stringify({
       generator,
-      user_id: userId,
       amount,
     }),
     contentType: 'application/json',
@@ -48,24 +55,20 @@ export function getRecommendation(generator, userId, amount) {
 }
 
 export async function checkToken() {
-  try {
-    const response = await fetch(`${API_URL}/auth/check-token`, {
-      method: 'GET',
+  return $.ajax({
+      type: 'GET',
+      url: `${API_URL}/auth/check-token`,
       headers: {
         'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
       },
     });
-    return response.ok;
-
-  } catch (error) {
-    return false;
-  }
 }
 
 export async function refreshToken() {
   try {
-    const response = await fetch(`${API_URL}/auth/refresh-token`, {
-      method: 'POST',
+    const response = await $.ajax({
+      type: 'POST',
+      url: `${API_URL}/auth/refresh-token`,
       headers: {
         'Authorization': `Bearer ${localStorage.getItem('refresh_token')}`,
         'Content-Type': 'application/json',
@@ -110,4 +113,62 @@ export async function isAuth() {
   // If all the checks fail, log the user out
   logout();
   return false;
+}
+
+export function subscribe(recommender, frequency, numRecommendations) {
+  const subscriptionData = {
+    recommender,
+    frequency,
+    num_recommendations: numRecommendations,
+  };
+
+  console.log(JSON.stringify(subscriptionData))
+
+  return $.ajax({
+    type: 'POST',
+    url: `${API_URL}/subscribe`,
+    headers: {
+      'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+      'Content-Type': 'application/json',
+    },
+    data: JSON.stringify(subscriptionData),
+  });
+}
+
+export function editSubscription(recommender, frequency, numRecommendations) {
+  const subscriptionData = {
+    recommender,
+    frequency,
+    num_recommendations: numRecommendations,
+  };
+
+  return $.ajax({
+    type: 'PUT',
+    url: `${API_URL}/edit-subscription`,
+    headers: {
+      'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+      'Content-Type': 'application/json',
+    },
+    data: JSON.stringify(subscriptionData),
+  });
+}
+
+export function viewSubscription() {
+  return $.ajax({
+    type: 'GET',
+    url: `${API_URL}/view-subscription`,
+    headers: {
+      'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+    },
+  });
+}
+
+export function deleteSubscription() {
+  return $.ajax({
+    type: 'DELETE',
+    url: `${API_URL}/delete-subscription`,
+    headers: {
+      'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+    },
+  });
 }

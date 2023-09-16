@@ -2,6 +2,7 @@ import requests
 from .recommendation_factory import Recommender
 import os
 
+
 class DummyGenerator(Recommender, cl_name="dummy"):
     @classmethod
     def recommend(cls, user_id, recommendation_amount):

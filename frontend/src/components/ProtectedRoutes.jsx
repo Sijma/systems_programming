@@ -18,7 +18,7 @@ const ProtectedRoutes = () => {
   if (isAuthenticated === null) {
     return null; // Render nothing while checking authentication
   }
-
+  console.log(isAuthenticated)
   return isAuthenticated ? <Outlet /> : <Navigate to="/login" />;
 };
 
