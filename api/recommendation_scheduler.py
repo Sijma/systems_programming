@@ -42,7 +42,6 @@ def send_recommendations(subscriptions):
                 selections = res.get("selections")
                 cached_recommendations = cache[recommender] = selections
 
-            # TODO: Format email body by adding line breaks between selections
             to_email = json.dumps({"selections": cached_recommendations[:num_recommendations]}, indent=4)
 
             msg = Message('Recommendation Subscription', sender=MAIL_USERNAME, recipients=[email])

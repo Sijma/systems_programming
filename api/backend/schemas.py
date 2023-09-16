@@ -12,8 +12,8 @@ recommendation_request_schema = {
     "type": "object",
     "properties": {
         "user_id": {"type": "integer", "minimum": 1},
-        "generator": {"type": "string", "enum": ["dummy", "random", "popular"]},  # TODO: make this dynamic
-        "amount": {"type": "integer", "minimum": 1},  # TODO: add a max
+        "generator": {"type": "string", "enum": ["dummy", "popular"]},  # TODO: make this dynamic
+        "amount": {"type": "integer", "minimum": 1, "maximum": 5},
     },
     "required": ["user_id", "generator", "amount"],
     "additionalProperties": False

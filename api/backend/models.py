@@ -1,9 +1,7 @@
-# from flask_login import UserMixin  # TODO: REMOVE FROM REQUIREMENTS IF UNUSED
 from . import db, bcrypt
 import secrets
 
 
-# TODO: IF USERMIXIN IS USED ADD IT AS PARENT OF USER
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(120), unique=True, nullable=False)

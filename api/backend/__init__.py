@@ -19,10 +19,10 @@ jwt = JWTManager()
 def create_app():
     app = Flask(__name__)
     app.json.sort_keys = False
-    app.config['SECRET_KEY'] = "aaxasdxsdajncdgijfdoigjdkfngd"  # TODO: CHANGE
+    app.config['SECRET_KEY'] = environ['FLASK_SECRET_KEY']
 
     # JWT
-    app.config['JWT_SECRET_KEY'] = 'dksjfpiaskdaijsfoiaspodkaopsdkahd'  # TODO: CHANGE
+    app.config['JWT_SECRET_KEY'] = environ['JWT_SECRET_KEY']
     app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(hours=1)
     app.config['JWT_REFRESH_TOKEN_EXPIRES'] = timedelta(days=30)
     jwt.init_app(app)
@@ -38,7 +38,7 @@ def create_app():
     app.config['MAIL_USE_TLS'] = False
     app.config['MAIL_USE_SSL'] = False
     app.config['MAIL_USERNAME'] = MAIL_USERNAME
-    app.config['MAIL_PASSWORD'] = 'recommendation_system_password'  # TODO: CHANGE
+    app.config['MAIL_PASSWORD'] = environ['MAIL_PASSWORD']
     mail.init_app(app)
 
     bcrypt.init_app(app)
