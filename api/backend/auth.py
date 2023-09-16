@@ -57,8 +57,12 @@ def register():
     token = new_user.generate_email_verification_token()
 
     msg = Message('Email Verification', sender=MAIL_USERNAME, recipients=[new_user.email])
-    msg.body = f'Click the following link to verify your email: http://localhost:5000/api/auth/verify_email/{token}'  # TODO: CHANGE LOCALHOST TO PROPER HOST
-    # TODO: ALSO CONSIDER ADDING A CHECK IF THIS WAS TRIGGERED FROM MY UI TO GIVE SLIGHTLY DIFF URL FOR VISUAL CONFIRMATION
+
+    # Checking if a custom header from my React app is present, to give a link to react instead of the backend instead.
+    if request.headers.get('from-frontend') == 'true':
+        msg.body = f'Click the following link to verify your email: http://localhost:3000/verify_email/{token}'  # TODO: CHANGE LOCALHOST TO PROPER HOST
+    else:
+        msg.body = f'Click the following link to verify your email: http://localhost:5000/api/auth/verify_email/{token}'  # TODO: CHANGE LOCALHOST TO PROPER HOST
     mail.send(msg)
 
     return jsonify({'message': 'Registration successful. Please check your email for verification.'})
@@ -84,7 +88,6 @@ def verify_email(verification_token):
 
     if user:
         user.verify_email_token()
-        access_token = create_access_token(user.id)
-        return jsonify({"message": "Email verified successfully", "access_token": access_token}), 200
+        return jsonify({"message": "Email verified successfully"}), 200
     else:
         return jsonify({"message": "Invalid or expired verification token"}), 400

@@ -1,11 +1,12 @@
 import React from "react";
 import { Routes, Route } from "react-router-dom";
-import Login from "./Login";
-import Register from "./Register";
-import WelcomePage from "./WelcomePage";
-import Dashboard from "./Dashboard";
-import ProtectedRoutes from "./ProtectedRoutes";
-import NotFound from './NotFound';
+import Login from "./components/Login";
+import Register from "./components/Register";
+import WelcomePage from "./components/WelcomePage";
+import Dashboard from "./components/Dashboard";
+import ProtectedRoutes from "./components/ProtectedRoutes";
+import NotFound from './components/NotFound';
+import VerifyEmail from "./components/VerifyEmail";
 
 const My_Routes = () => {
   return (
@@ -14,6 +15,7 @@ const My_Routes = () => {
             <Route exact path="/" element={<WelcomePage/>} />
             <Route exact path="/login" element={<Login/>} />
             <Route exact path="/register" element={<Register/>} />
+            <Route path="/verify_email/:token" element={<VerifyEmail/>} />
             <Route path="/dashboard" element={<ProtectedRoutes/>}>
                 <Route index element={<Dashboard/>} />
             </Route>

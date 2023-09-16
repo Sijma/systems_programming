@@ -1,6 +1,6 @@
 import { Outlet, Navigate } from "react-router-dom";
 import { useState, useEffect } from "react";
-import {isAuth} from "./api"; // Import your isAuth function
+import {isAuth} from "../api"; // Import your isAuth function
 
 const ProtectedRoutes = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(null);
