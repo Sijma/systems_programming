@@ -22,7 +22,8 @@ def get_recommenders():
 @jwt_required()
 @schemas.json_validator(schemas.recommendation_request_schema)
 def get_recommendation():
-    response = get_recommendation_coupon(request.json["generator"], request.json["user_id"], request.json["amount"])
+    user_id = get_jwt_identity()
+    response = get_recommendation_coupon(request.json["generator"], user_id, request.json["amount"])
     return response
 
 

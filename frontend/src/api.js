@@ -40,6 +40,10 @@ export function getRecommenders() {
 }
 
 export function getRecommendation(generator, amount) {
+  console.log(JSON.stringify({
+      generator,
+      amount,
+    }));
   return $.ajax({
     type: 'POST',
     url: `${API_URL}/recommend`,

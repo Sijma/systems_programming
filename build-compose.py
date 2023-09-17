@@ -262,8 +262,6 @@ if __name__ == '__main__':
           FLASK_SECRET_KEY: {secret["flask"]["secret_key"]}
           JWT_SECRET_KEY: {secret["flask"]["jwt_secret_key"]}
           MAIL_PASSWORD: {secret["flask"]["mail_password"]}
-        env_file:
-          - .env.auth_secrets
     
     
       frontend:

@@ -11,11 +11,10 @@ TYPE_STATISTICS = "statistics"
 recommendation_request_schema = {
     "type": "object",
     "properties": {
-        "user_id": {"type": "integer", "minimum": 1},
         "generator": {"type": "string", "enum": ["dummy", "popular"]},  # TODO: make this dynamic
         "amount": {"type": "integer", "minimum": 1, "maximum": 5},
     },
-    "required": ["user_id", "generator", "amount"],
+    "required": ["generator", "amount"],
     "additionalProperties": False
 }
 

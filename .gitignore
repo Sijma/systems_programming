@@ -168,7 +168,7 @@ cython_debug/
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
 
-!/secrets.json
-!/postgres_authentication_data/
-!/postgres_data/
-!/docker-compose.yml
+/secrets.json
+/postgres_authentication_data/
+/postgres_data/
+/docker-compose.yml
