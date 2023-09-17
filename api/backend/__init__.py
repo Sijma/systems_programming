@@ -43,7 +43,7 @@ def create_app():
 
     bcrypt.init_app(app)
 
-    CORS(app, resources={r"/api/*": {"origins": "http://localhost:3000"}})
+    CORS(app, resources={r"/api/*": {"origins": "*"}})
 
     from .routes import routes
     from .auth import auth

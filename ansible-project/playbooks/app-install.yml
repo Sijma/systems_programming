@@ -1,0 +1,49 @@
+---
+- name: install app
+  hosts: all
+  become: true  # change user, if not specify you change to root.
+  tasks:
+    - name: Update package cache
+      apt:
+        update_cache: yes
+
+    - name: create /app directory
+      file:
+        path: /app
+        state: directory
+        mode: 0755
+
+    - name: Install Git
+      package:
+        name: git
+        state: present
+
+    - name: Clone Git repository
+      git:
+        repo: https://github.com/Sijma/systems_programming
+        dest: /app
+
+#    - name: Download code from GitHub
+#      community.general.github_release:
+#        user: Sijma
+#        repo: systems_programming
+#        action: latest_release
+#        dest: /app
+#        mode: 0755
+
+    - name: Copy secrets
+      copy:
+        src: ../../secrets.json
+        dest: /app
+        mode: 0755
+
+    - name: Copy docker-compose  # TODO: Remove later, only for test
+      copy:
+        src: ../../docker-compose.yml
+        dest: /app
+        mode: 0755
+
+    - name: Start Docker Compose
+      command: docker-compose up -d
+      args:
+        chdir: /app

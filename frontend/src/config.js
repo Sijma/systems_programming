@@ -1,3 +1,5 @@
 // config.js
 
-export const API_URL = 'http://localhost:5000/api';  // TODO: PROBABLY CHANGE
+const host = "betting-recommender.westeurope.cloudapp.azure.com"
+
+export const API_URL = 'http://'+host+':5000/api';  // TODO: PROBABLY CHANGE

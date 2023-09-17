@@ -6,6 +6,9 @@ from flask_jwt_extended import create_access_token, create_refresh_token, jwt_re
 
 auth = Blueprint('auth', __name__)
 
+HOST = "betting-recommender.westeurope.cloudapp.azure.com"
+# HOST = "localhost"
+
 
 @auth.route('/login', methods=["POST"])
 def login():
@@ -60,9 +63,9 @@ def register():
 
     # Checking if a custom header from my React app is present, to give a link to react instead of the backend instead.
     if request.headers.get('from-frontend') == 'true':
-        msg.body = f'Click the following link to verify your email: http://localhost:3000/verify_email/{token}'  # TODO: CHANGE LOCALHOST TO PROPER HOST
+        msg.body = f'Click the following link to verify your email: http://{HOST}:3000/verify_email/{token}'  # TODO: CHANGE LOCALHOST TO PROPER HOST
     else:
-        msg.body = f'Click the following link to verify your email: http://localhost:5000/api/auth/verify_email/{token}'  # TODO: CHANGE LOCALHOST TO PROPER HOST
+        msg.body = f'Click the following link to verify your email: http://{HOST}:5000/api/auth/verify_email/{token}'  # TODO: CHANGE LOCALHOST TO PROPER HOST
     mail.send(msg)
 
     return jsonify({'message': 'Registration successful. Please check your email for verification.'})
